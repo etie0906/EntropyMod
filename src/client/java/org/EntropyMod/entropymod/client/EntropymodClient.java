@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.Identifier;
+import org.EntropyMod.entropymod.Entropymod;
 import org.EntropyMod.entropymod.client.menu.screens.MainLobbyScreen;
 import org.EntropyMod.entropymod.client.timer.TimerOverlay;
 import org.EntropyMod.entropymod.network.ChallengePackets;
@@ -14,10 +16,9 @@ import org.lwjgl.glfw.GLFW;
 public class EntropymodClient implements ClientModInitializer {
     public static KeyBinding openMenuKey;
 
-    // FIX: KeyBinding category must be a KeyBinding.Category, not a raw String.
-    // Use KeyBinding.Category.create() to register a custom category.
+    // FIX: KeyBinding.Category.create(String, int) is private; the public factory takes an Identifier.
     public static final KeyBinding.Category ENTROPYMOD_CATEGORY =
-            KeyBinding.Category.create("category.entropymod.general", 100);
+            KeyBinding.Category.create(Identifier.of(Entropymod.MOD_ID, "general"));
 
     @Override
     public void onInitializeClient() {
@@ -41,10 +42,9 @@ public class EntropymodClient implements ClientModInitializer {
     }
 
     private void registerPacketHandlers() {
-        // FIX: ChallengePackets.TIMER_UPDATE and CHALLENGE_STATE must be declared
-        // as CustomPayload IDs in ChallengePackets. The receiver API also changed in
-        // 1.21 — use the typed payload receiver pattern.
-        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.TIMER_UPDATE_ID,
+        // FIX: The IDs live on the payload records as TimerUpdatePayload.ID / ChallengeStatePayload.ID.
+        // The receiver lambda receives a typed payload directly — no cast needed.
+        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.TimerUpdatePayload.ID,
                 (payload, context) -> {
                     String time = payload.time();
                     String color = payload.color();
@@ -58,7 +58,7 @@ public class EntropymodClient implements ClientModInitializer {
                     });
                 });
 
-        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.CHALLENGE_STATE_ID,
+        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.ChallengeStatePayload.ID,
                 (payload, context) -> {
                     String challengeId = payload.challengeId();
                     boolean active = payload.active();

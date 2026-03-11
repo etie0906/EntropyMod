@@ -47,11 +47,14 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
             this.active = active;
         }
 
-        // FIX: render signature must exactly match the abstract method in EntryListWidget.Entry.
-        // In 1.21.11: render(DrawContext, int, int, int, int, int, int, int, boolean, float)
+        // FIX: EntryListWidget.Entry.render abstract method in 1.21.11 is:
+        //   render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks)
         @Override
-        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
-                           int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
+            int x = getX();
+            int y = getY();
+            int entryWidth = getWidth();
+            int entryHeight = getHeight();
 
             int bgColor = active ? 0x4400FF00 : 0x33FFFFFF;
             if (hovered) bgColor = 0x55FFFFFF;

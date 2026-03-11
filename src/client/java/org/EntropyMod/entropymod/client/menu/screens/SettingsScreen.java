@@ -27,12 +27,10 @@ public class SettingsScreen extends Screen {
                 this.textRenderer
         ));
 
-        // FIX: CyclingButtonWidget.builder() now requires BOTH a value-to-Text mapper AND either
-        // a Supplier<T> or a T initial value as separate arguments — the .initially() chain is gone.
-        // New pattern: builder(mapper, initialValue).values(...).build(...)
-        // Also: Difficulty::getName returns a Text in 1.21, so use it directly.
+        // FIX: builder(Function) alone is not valid — must be builder(valueToText, T initialValue)
+        // or builder(valueToText, Supplier<T>). Pass Difficulty.EASY as the initial value.
         this.addDrawableChild(
-                CyclingButtonWidget.<Difficulty>builder(difficulty -> difficulty.getName())
+                CyclingButtonWidget.<Difficulty>builder(difficulty -> Text.literal(difficulty.getName()), Difficulty.EASY)
                         .values(Difficulty.values())
                         .build(centerX - 100, y, 200, 20, Text.literal("Difficulty"),
                                 (btn, value) -> { /* apply difficulty */ })

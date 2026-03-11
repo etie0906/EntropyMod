@@ -31,10 +31,10 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
             boolean isReady = false;
             int ping = entry.getLatency();
 
-            // FIX: GameProfile.getId() / getName() are now record accessors: .id() and .name()
+            // FIX: GameProfile is now a record — use .id() and .name() not .getId()/.getName()
             this.addEntry(new PlayerEntry(
-                    entry.getProfile().getId(),
-                    entry.getProfile().getName(),
+                    entry.getProfile().id(),
+                    entry.getProfile().name(),
                     ping,
                     isReady,
                     isAdmin
@@ -57,15 +57,15 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
             this.isAdmin = isAdmin;
         }
 
-        // FIX: render signature changed — 'boolean hovered' moved to after mouseY, 'float tickDelta' last.
-        // Old: render(DrawContext, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-        // New: render(DrawContext, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-        // The signature itself is the same shape — the issue was a missing @Override match.
-        // In 1.21.11 the abstract method is:
-        //   render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
+        // FIX: EntryListWidget.Entry.render abstract method in 1.21.11 is:
+        //   render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks)
+        // The 10-param variant belonged to ElementListWidget.Entry, not EntryListWidget.Entry.
         @Override
-        public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
-                           int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
+            int x = getX();
+            int y = getY();
+            int entryWidth = getWidth();
+            int entryHeight = getHeight();
 
             context.fill(x, y, x + entryWidth, y + entryHeight, 0x33FFFFFF);
 

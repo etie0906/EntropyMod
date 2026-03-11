@@ -1,5 +1,6 @@
 package org.EntropyMod.entropymod.client.menu.widgets;
 
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
@@ -139,21 +140,23 @@ public class DigitalTimerWidget extends ClickableWidget {
         }
     }
 
-    // FIX: mouseClicked(double, double, int) is gone — signature is now mouseClicked(Click, boolean).
-    // Delegate to child buttons using their own isMouseOver + onClick logic instead.
+    // FIX: mouseClicked signature changed to (Click click, boolean bl) in 1.21.11.
+    // Click is a record with .x(), .y(), .button() accessors.
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(Click click, boolean bl) {
+        double mouseX = click.x();
+        double mouseY = click.y();
         for (ButtonWidget btn : plusButtons) {
             if (btn.isMouseOver(mouseX, mouseY)) {
-                return btn.mouseClicked(mouseX, mouseY, button);
+                return btn.mouseClicked(click, bl);
             }
         }
         for (ButtonWidget btn : minusButtons) {
             if (btn.isMouseOver(mouseX, mouseY)) {
-                return btn.mouseClicked(mouseX, mouseY, button);
+                return btn.mouseClicked(click, bl);
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, bl);
     }
 
     // FIX: GuiNavigationPathBuilder no longer exists — appendClickableNarrations now takes
