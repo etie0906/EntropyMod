@@ -50,7 +50,7 @@ public class WorldFreezer {
                 if (entity instanceof MobEntity mob) {
                     mob.setAiDisabled(true);
                 }
-                frozenPositions.put(entity.getUuid(), entity.getPos());
+                frozenPositions.put(entity.getUuid(), new Vec3d(entity.getX(), entity.getY(), entity.getZ()));
                 frozenVelocities.put(entity.getUuid(), entity.getVelocity());
                 entity.setVelocity(Vec3d.ZERO);
                 entity.velocityDirty = true;
@@ -58,7 +58,7 @@ public class WorldFreezer {
         }
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            frozenPositions.put(player.getUuid(), player.getPos());
+            frozenPositions.put(player.getUuid(), new Vec3d(player.getX(), player.getY(), player.getZ()));
             frozenVelocities.put(player.getUuid(), player.getVelocity());
             player.setVelocity(Vec3d.ZERO);
             player.velocityDirty = true;
