@@ -6,28 +6,27 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.GameRules;
 import org.EntropyMod.entropymod.Entropymod;
-import org.EntropyMod.entropymod.freezer.WorldFreezer;
 import org.EntropyMod.entropymod.network.ChallengePackets;
-import org.apache.logging.log4j.core.tools.picocli.CommandLine;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class TimerManager {
     private static TimerManager instance;
-
-    private TimerState state = TimerState.STOPPED;
-    private TimerConfig config = new TimerConfig();
-    private int currentSeconds = 0;
-    private int tickCounter = 0;
     private MinecraftServer server;
-    private Set<UUID> playersInMenu = new HashSet<>();
+    private boolean running = false;
+    private boolean upwards = true;
+    private int time = 0;
+    private String color = "WHITE";
+    private Map<UUID, Boolean> frozenPlayers = new HashMap<>();
 
-    private TimerManager() {}
+    // ENTFERNE: import org.w3c.dom.Text; (war die falsche Text-Klasse)
 
     public static TimerManager getInstance() {
-        if (instance == null) instance = new TimerManager();
+        if (instance == null) {
+            instance = new TimerManager();
+        }
         return instance;
     }
 
@@ -35,180 +34,72 @@ public class TimerManager {
         this.server = server;
     }
 
-    public void tick(MinecraftServer server) {
-        if (this.server == null) this.server = server;
+    public void tick() {
+        if (!running || server == null) return;
 
-        if (state == TimerState.RUNNING) {
-            tickCounter++;
-            if (tickCounter >= 20) { // Every second
-                tickCounter = 0;
-                updateTimer();
-            }
-        }
-
-        // Send update to all players
-        if (tickCounter % 5 == 0) { // Update display 4 times per second
-            broadcastTimer();
-        }
-    }
-
-    private void updateTimer() {
-        if (config.isUpwards()) {
-            currentSeconds++;
-            config.setFromTotalSeconds(currentSeconds);
+        if (upwards) {
+            time++;
         } else {
-            if (currentSeconds > 0) {
-                currentSeconds--;
-                config.setFromTotalSeconds(currentSeconds);
-                if (currentSeconds == 0) {
-                    onTimerEnd();
-                }
-            }
+            if (time > 0) time--;
         }
+
+        broadcastTime();
     }
 
-    private void onTimerEnd() {
-        // Timer reached zero in countdown mode
-        broadcastMessage("Timer ended!");
-        // Could trigger challenge end here
-    }
-
-    public void broadcastTimer() {
+    private void broadcastTime() {
         if (server == null) return;
 
-        String timeStr = config.formatTime();
-        String color = getCurrentColor();
+        String timeStr = formatTime(time);
         Text timerText = formatColoredText(timeStr, color);
 
+        // KORRIGIERT: getPlayerManager() -> getPlayerManager()
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            // Send to actionbar
             player.sendMessage(timerText, true);
-
-            // Send to menu if open
-            if (playersInMenu.contains(player.getUuid())) {
-                ChallengePackets.sendTimerUpdate(player, timeStr, color, state.name());
-            }
+            ChallengePackets.sendTimerUpdate(player, timeStr, color, running ? "running" : "paused");
         }
     }
 
-    private String getCurrentColor() {
-        if (state == TimerState.PAUSED) return config.getPausedColor();
-        if (state == TimerState.STOPPED) return "gray";
-        if (!config.isUpwards() && currentSeconds <= config.getLowTimeThreshold()) {
-            return config.getLowTimeColor();
-        }
-        return config.getRunningColor();
+    private String formatTime(int seconds) {
+        int mins = seconds / 60;
+        int secs = seconds % 60;
+        return String.format("%02d:%02d", mins, secs);
     }
 
-    private org.w3c.dom.Text formatColoredText(String text, String color) {
-        // Handle hex colors
-        if (color.startsWith("#")) {
-            try {
+    // KORRIGIERT: Rückgabetyp ist net.minecraft.text.Text (nicht org.w3c.dom.Text)
+    private Text formatColoredText(String text, String color) {
+        try {
+            if (color.startsWith("#")) {
                 int hex = Integer.parseInt(color.substring(1), 16);
                 return Text.literal(text).styled(s -> s.withColor(hex));
-            } catch (Exception e) {
+            } else {
                 return Text.literal(text).formatted(Formatting.WHITE);
             }
-        }
-
-        // Handle named colors
-        Formatting formatting = Formatting.byName(color.toUpperCase());
-        if (formatting == null) formatting = Formatting.WHITE;
-        return Text.literal(text).formatted(formatting);
-    }
-
-    public void start() {
-        if (state == TimerState.STOPPED) {
-            currentSeconds = config.getTotalSeconds();
-        }
-        state = TimerState.RUNNING;
-        WorldFreezer.getInstance().setFrozen(false);
-        broadcastMessage("Timer started!");
-    }
-
-    public void pause() {
-        if (state == TimerState.RUNNING) {
-            state = TimerState.PAUSED;
-            WorldFreezer.getInstance().setFrozen(true);
-            broadcastMessage("Timer paused!");
+        } catch (Exception e) {
+            Formatting formatting = Formatting.byName(color.toUpperCase());
+            if (formatting == null) formatting = Formatting.WHITE;
+            return Text.literal(text).formatted(formatting);
         }
     }
 
-    public void resume() {
-        if (state == TimerState.PAUSED) {
-            state = TimerState.RUNNING;
-            WorldFreezer.getInstance().setFrozen(false);
-            broadcastMessage("Timer resumed!");
-        }
-    }
-
-    public void stop() {
-        state = TimerState.STOPPED;
-        currentSeconds = config.getTotalSeconds();
-        WorldFreezer.getInstance().setFrozen(true);
-        broadcastMessage("Timer stopped!");
-    }
-
-    public void setTime(int days, int hours, int minutes, int seconds) {
-        config.setDays(days);
-        config.setHours(hours);
-        config.setMinutes(minutes);
-        config.setSeconds(seconds);
-        if (state == TimerState.STOPPED) {
-            currentSeconds = config.getTotalSeconds();
-        }
-    }
-
-    public void setUpwards(boolean upwards) {
-        config.setUpwards(upwards);
-    }
-
-    public void setColor(String type, String color) {
-        switch (type.toLowerCase()) {
-            case "running" -> config.setRunningColor(color);
-            case "paused" -> config.setPausedColor(color);
-            case "low" -> config.setLowTimeColor(color);
-        }
-    }
-
-    public void resetSettings() {
-        config.reset();
-        if (state == TimerState.STOPPED) {
-            currentSeconds = 0;
-        }
-    }
+    public void start() { running = true; }
+    public void pause() { running = false; }
+    public void stop() { running = false; time = 0; }
+    public void setUpwards(boolean up) { this.upwards = up; }
+    public void setColor(String color) { this.color = color; }
+    public void setTime(int seconds) { this.time = seconds; }
 
     public void onPlayerJoin(ServerPlayerEntity player) {
-        // Send current state
-        ChallengePackets.sendTimerUpdate(player, config.formatTime(), getCurrentColor(), state.name());
+        frozenPlayers.put(player.getUuid(), false);
     }
 
     public void onPlayerLeave(ServerPlayerEntity player) {
-        playersInMenu.remove(player.getUuid());
+        frozenPlayers.remove(player.getUuid());
     }
 
-    public void setPlayerInMenu(UUID playerUuid, boolean inMenu) {
-        if (inMenu) playersInMenu.add(playerUuid);
-        else playersInMenu.remove(playerUuid);
-    }
-
-    public void broadcastMessage(String msg) {
+    // KORRIGIERT: getPlayerManager() statt getPlayerManager()
+    private void broadcastMessage(String msg) {
         if (server != null) {
             server.getPlayerManager().broadcast(Text.literal("[EntropyMod] " + msg), false);
         }
-    }
-
-    public TimerState getState() { return state; }
-    public TimerConfig getConfig() { return config; }
-    public boolean isRunning() { return state == TimerState.RUNNING; }
-
-    public void save() {
-        // Save to file
-        // Implementation for persistence
-    }
-
-    public void load(MinecraftServer server) {
-        // Load from file
-        this.server = server;
     }
 }

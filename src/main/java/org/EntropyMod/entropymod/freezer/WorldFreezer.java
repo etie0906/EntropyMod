@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import org.EntropyMod.entropymod.Entropymod;
 
 import java.util.HashMap;
@@ -15,47 +16,33 @@ import java.util.UUID;
 
 public class WorldFreezer {
     private static WorldFreezer instance;
-
-    private boolean frozen = true;
+    private boolean frozen = false;
     private MinecraftServer server;
+    private long frozenTime;
     private Map<UUID, Vec3d> frozenPositions = new HashMap<>();
     private Map<UUID, Vec3d> frozenVelocities = new HashMap<>();
-    private long frozenTime = 0;
-
-    private WorldFreezer() {}
 
     public static WorldFreezer getInstance() {
-        if (instance == null) instance = new WorldFreezer();
+        if (instance == null) {
+            instance = new WorldFreezer();
+        }
         return instance;
     }
 
     public void init(MinecraftServer server) {
         this.server = server;
-        this.frozen = true; // Start frozen until timer starts
     }
 
-    public void setFrozen(boolean frozen) {
-        if (this.frozen == frozen) return;
+    public void freeze() {
+        if (frozen || server == null) return;
 
-        this.frozen = frozen;
-
-        if (frozen) {
-            freezeAll();
-        } else {
-            unfreezeAll();
-        }
-    }
-
-    private void freezeAll() {
-        if (server == null) return;
-
+        frozen = true;
         frozenTime = server.getOverworld().getTime();
 
         for (ServerWorld world : server.getWorlds()) {
-            // Freeze time
-            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false);
+            // KORRIGIERT: GameRules.DO_DAYLIGHT_CYCLE ist jetzt ein Key-Objekt
+            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, server);
 
-            // Freeze entities
             for (Entity entity : world.getEntitiesByClass(Entity.class,
                     new net.minecraft.util.math.Box(
                             Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -63,30 +50,34 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    living.setAiDisabled(true);
+                    // KORRIGIERT: setAiDisabled() existiert nicht mehr - verwende setNoAi()
+                    living.setNoAi(true);
                 }
+
+                frozenPositions.put(entity.getUuid(), entity.getPos());
+                frozenVelocities.put(entity.getUuid(), entity.getVelocity());
                 entity.setVelocity(Vec3d.ZERO);
-                entity.velocityModified = true;
+                // KORRIGIERT: velocityModified existiert nicht mehr
+                entity.velocityDirty = true;
             }
         }
 
-        // Freeze players
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             frozenPositions.put(player.getUuid(), player.getPos());
             frozenVelocities.put(player.getUuid(), player.getVelocity());
             player.setVelocity(Vec3d.ZERO);
-            player.velocityModified = true;
+            player.velocityDirty = true;
         }
     }
 
-    private void unfreezeAll() {
-        if (server == null) return;
+    public void unfreeze() {
+        if (!frozen || server == null) return;
+
+        frozen = false;
 
         for (ServerWorld world : server.getWorlds()) {
-            // Unfreeze time
             world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(true, server);
 
-            // Unfreeze entities
             for (Entity entity : world.getEntitiesByClass(Entity.class,
                     new net.minecraft.util.math.Box(
                             Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -94,8 +85,22 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    living.setNoAi(true);
+                    living.setNoAi(false);
                 }
+
+                Vec3d vel = frozenVelocities.get(entity.getUuid());
+                if (vel != null) {
+                    entity.setVelocity(vel);
+                    entity.velocityDirty = true;
+                }
+            }
+        }
+
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            Vec3d vel = frozenVelocities.get(player.getUuid());
+            if (vel != null) {
+                player.setVelocity(vel);
+                player.velocityDirty = true;
             }
         }
 
@@ -103,34 +108,34 @@ public class WorldFreezer {
         frozenVelocities.clear();
     }
 
-    public void tick(MinecraftServer server) {
+    public void tick() {
         if (!frozen || server == null) return;
 
-        // Keep time frozen
         for (ServerWorld world : server.getWorlds()) {
             world.setTimeOfDay(frozenTime);
         }
 
-        // Keep players frozen
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             Vec3d frozenPos = frozenPositions.get(player.getUuid());
             if (frozenPos != null) {
-                // Teleport back if moved
-                if (player.squaredDistanceTo(frozenPos) > 0.01) {
-                    player.teleport(world, x, y, z, PositionFlag.VALUES, yaw, pitch, true);
-                }
+                // KORRIGIERT: Teleport mit korrekten Parametern
+                player.teleport(
+                        (ServerWorld) player.getWorld(),
+                        frozenPos.x, frozenPos.y, frozenPos.z,
+                        java.util.EnumSet.noneOf(net.minecraft.entity.PositionFlag.class),
+                        player.getYaw(), player.getPitch(),
+                        true
+                );
                 player.setVelocity(Vec3d.ZERO);
-                player.velocityModified = true;
+                player.velocityDirty = true;
             }
         }
     }
 
-    public boolean isFrozen() { return frozen; }
-
     public void onPlayerJoin(ServerPlayerEntity player) {
         if (frozen) {
-            frozenPositions.put(player.getUuid(), player.getPos());
             player.setVelocity(Vec3d.ZERO);
+            player.velocityDirty = true;
         }
     }
 }

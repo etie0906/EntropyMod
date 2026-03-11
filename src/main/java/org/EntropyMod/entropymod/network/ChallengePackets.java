@@ -11,7 +11,6 @@ import org.EntropyMod.entropymod.Entropymod;
 
 public class ChallengePackets {
 
-    // Timer Update Payload
     public record TimerUpdatePayload(String time, String color, String state) implements CustomPayload {
         public static final Id<TimerUpdatePayload> ID = new Id<>(Identifier.of(Entropymod.MOD_ID, "timer_update"));
         public static final PacketCodec<PacketByteBuf, TimerUpdatePayload> CODEC = PacketCodec.of(
@@ -24,12 +23,9 @@ public class ChallengePackets {
         );
 
         @Override
-        public Id<? extends CustomPayload> getId() {
-            return ID;
-        }
+        public Id<? extends CustomPayload> getId() { return ID; }
     }
 
-    // Challenge State Payload
     public record ChallengeStatePayload(String challengeId, boolean active) implements CustomPayload {
         public static final Id<ChallengeStatePayload> ID = new Id<>(Identifier.of(Entropymod.MOD_ID, "challenge_state"));
         public static final PacketCodec<PacketByteBuf, ChallengeStatePayload> CODEC = PacketCodec.of(
@@ -41,9 +37,7 @@ public class ChallengePackets {
         );
 
         @Override
-        public Id<? extends CustomPayload> getId() {
-            return ID;
-        }
+        public Id<? extends CustomPayload> getId() { return ID; }
     }
 
     public static void register() {

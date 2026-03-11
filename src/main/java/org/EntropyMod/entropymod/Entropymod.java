@@ -5,12 +5,11 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import org.EntropyMod.entropymod.challenges.ChallengeManager;
+import net.minecraft.server.MinecraftServer;
 import org.EntropyMod.entropymod.commands.ChallengesCommand;
 import org.EntropyMod.entropymod.commands.TimerCommand;
 import org.EntropyMod.entropymod.freezer.WorldFreezer;
 import org.EntropyMod.entropymod.network.ChallengePackets;
-import org.EntropyMod.entropymod.race.RaceManager;
 import org.EntropyMod.entropymod.timer.TimerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,50 +20,47 @@ public class Entropymod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Initializing EntropyMod Challenges System");
+        LOGGER.info("Initializing EntropyMod");
 
-        // Register packets
+        // Networking registrieren
         ChallengePackets.register();
 
-        // Register commands
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            ChallengesCommand.register(dispatcher);
-            TimerCommand.register(dispatcher);
-        });
+        // Server Lifecycle
+        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
+        ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
 
-        // Server tick events
+        // Server Tick
         ServerTickEvents.START_SERVER_TICK.register(server -> {
-            TimerManager.getInstance().tick(server);
-            ChallengeManager.getInstance().tick(server);
-            RaceManager.getInstance().tick(server);
+            TimerManager.getInstance().tick();
+            WorldFreezer.getInstance().tick();
         });
 
-        // Player join/leave handling
+        // Player Events
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             TimerManager.getInstance().onPlayerJoin(handler.player);
-            ChallengeManager.getInstance().onPlayerJoin(handler.player);
+            WorldFreezer.getInstance().onPlayerJoin(handler.player);
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             TimerManager.getInstance().onPlayerLeave(handler.player);
-            // Pause timer if no players left
-            if (server.getPlayerCount() <= 1) {
-                TimerManager.getInstance().pause();
-                WorldFreezer.getInstance().setFrozen(true);
-            }
         });
 
-        // Server stop - save data
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            TimerManager.getInstance().save();
-            ChallengeManager.getInstance().save();
+        // Commands
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            ChallengesCommand.register(dispatcher);
+            TimerCommand.register(dispatcher);
         });
+    }
 
-        // Server start - load data
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            TimerManager.getInstance().load(server);
-            ChallengeManager.getInstance().load(server);
-            WorldFreezer.getInstance().init(server);
-        });
+    private void onServerStarted(MinecraftServer server) {
+        TimerManager.getInstance().init(server);
+        WorldFreezer.getInstance().init(server);
+
+        // KORRIGIERT: getPlayerCount() -> getPlayerManager().getPlayerList().size()
+        LOGGER.info("Server started with {} players", server.getPlayerManager().getPlayerList().size());
+    }
+
+    private void onServerStopping(MinecraftServer server) {
+        WorldFreezer.getInstance().unfreeze();
     }
 }
