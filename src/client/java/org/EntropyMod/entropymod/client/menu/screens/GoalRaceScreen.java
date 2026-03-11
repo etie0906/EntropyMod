@@ -65,7 +65,6 @@ public class GoalRaceScreen extends Screen {
         if (this.client != null && this.client.player != null) {
             this.client.player.networkHandler.sendChatCommand("race start " + type);
         }
-        // FIX: 'button' was an undefined bare variable reference — call goBack with null instead
         goBack(null);
     }
 

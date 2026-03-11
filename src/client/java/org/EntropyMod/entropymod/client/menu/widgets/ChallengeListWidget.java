@@ -13,9 +13,6 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
     private final MinecraftClient client;
     private final Map<String, Boolean> challengeStates = new HashMap<>();
 
-    // FIX: AlwaysSelectedEntryListWidget constructor no longer takes a separate 'bottom' int.
-    // Old: (client, width, height, top, bottom, itemHeight)  ← 6 args
-    // New: (client, width, height, top, itemHeight)          ← 5 args
     public ChallengeListWidget(MinecraftClient client, int width, int height, int left, int top, int itemHeight) {
         super(client, width, height, top, itemHeight);
         this.client = client;
@@ -31,7 +28,6 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
 
     public void updateChallenge(String id, boolean active) {
         challengeStates.put(id, active);
-        // Refresh entry — full refresh for simplicity
     }
 
     public class ChallengeEntry extends AlwaysSelectedEntryListWidget.Entry<ChallengeEntry> {
@@ -47,8 +43,6 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
             this.active = active;
         }
 
-        // FIX: EntryListWidget.Entry.render abstract method in 1.21.11 is:
-        //   render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks)
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
             int x = getX();

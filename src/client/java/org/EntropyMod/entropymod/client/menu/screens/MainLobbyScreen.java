@@ -53,8 +53,6 @@ public class MainLobbyScreen extends Screen {
 
         timerWidget = new DigitalTimerWidget(
                 this.width - 180, 60, 160, 80,
-                // FIX: DigitalTimerWidget calls onChange with int[] but onTimerChanged takes
-                // (int, int, int, int). Change to a lambda that unpacks the array.
                 values -> onTimerChanged(values[0], values[1], values[2], values[3])
         );
         this.addDrawableChild(timerWidget);

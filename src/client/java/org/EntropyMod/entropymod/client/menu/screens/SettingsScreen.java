@@ -27,8 +27,6 @@ public class SettingsScreen extends Screen {
                 this.textRenderer
         ));
 
-        // FIX: builder(Function) alone is not valid — must be builder(valueToText, T initialValue)
-        // or builder(valueToText, Supplier<T>). Pass Difficulty.EASY as the initial value.
         this.addDrawableChild(
                 CyclingButtonWidget.<Difficulty>builder(difficulty -> Text.literal(difficulty.getName()), Difficulty.EASY)
                         .values(Difficulty.values())
@@ -38,9 +36,6 @@ public class SettingsScreen extends Screen {
 
         y += 30;
 
-        // FIX: CyclingButtonWidget.onOffBuilder() now requires a boolean initial value argument.
-        // Old: onOffBuilder().initially(false)
-        // New: onOffBuilder(false)
         this.addDrawableChild(
                 CyclingButtonWidget.onOffBuilder(false)
                         .build(centerX - 100, y, 200, 20, Text.literal("Keep Inventory"),

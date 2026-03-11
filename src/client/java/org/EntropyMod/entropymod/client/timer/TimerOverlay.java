@@ -16,16 +16,13 @@ public class TimerOverlay implements HudRenderCallback {
         HudRenderCallback.EVENT.register(new TimerOverlay());
     }
 
-    // FIX: onHudRender signature changed — float tickDelta replaced by RenderTickCounter
     @Override
     public void onHudRender(DrawContext drawContext, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
-        // Don't render if in menu (menu has its own timer)
         if (client.currentScreen != null) return;
 
-        // Render above hotbar (around y = height - 60)
         int x = client.getWindow().getScaledWidth() / 2;
         int y = client.getWindow().getScaledHeight() - 55;
 
@@ -42,7 +39,6 @@ public class TimerOverlay implements HudRenderCallback {
     private Text formatTime(String time, String color) {
         Formatting formatting = Formatting.byName(color.toUpperCase());
         if (formatting == null) {
-            // Try hex
             if (color.startsWith("#")) {
                 try {
                     int hex = Integer.parseInt(color.substring(1), 16);

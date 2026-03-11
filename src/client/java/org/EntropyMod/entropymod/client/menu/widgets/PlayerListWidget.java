@@ -12,9 +12,6 @@ import java.util.UUID;
 public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWidget.PlayerEntry> {
     private final MinecraftClient client;
 
-    // FIX: AlwaysSelectedEntryListWidget constructor no longer takes a separate 'bottom' int.
-    // Old: (client, width, height, top, bottom, itemHeight)
-    // New: (client, width, height, top, itemHeight)
     public PlayerListWidget(MinecraftClient client, int width, int height, int top, int bottom, int itemHeight) {
         super(client, width, height, top, itemHeight);
         this.client = client;
@@ -31,7 +28,6 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
             boolean isReady = false;
             int ping = entry.getLatency();
 
-            // FIX: GameProfile is now a record — use .id() and .name() not .getId()/.getName()
             this.addEntry(new PlayerEntry(
                     entry.getProfile().id(),
                     entry.getProfile().name(),
@@ -57,9 +53,6 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
             this.isAdmin = isAdmin;
         }
 
-        // FIX: EntryListWidget.Entry.render abstract method in 1.21.11 is:
-        //   render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks)
-        // The 10-param variant belonged to ElementListWidget.Entry, not EntryListWidget.Entry.
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
             int x = getX();

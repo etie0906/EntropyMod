@@ -14,7 +14,6 @@ public class FreezerRenderer implements HudRenderCallback {
         HudRenderCallback.EVENT.register(new FreezerRenderer());
     }
 
-    // FIX: onHudRender signature changed — float tickDelta replaced by RenderTickCounter
     @Override
     public void onHudRender(DrawContext drawContext, RenderTickCounter tickCounter) {
         if (!frozen) return;

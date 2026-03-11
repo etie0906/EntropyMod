@@ -32,7 +32,6 @@ public class DigitalTimerWidget extends ClickableWidget {
     private void initButtons() {
         int segmentWidth = this.getWidth() / 4;
 
-        // FIX: this.x / this.y are now private — use getX() / getY() instead
         for (int i = 0; i < 4; i++) {
             final int index = i;
             plusButtons[i] = ButtonWidget.builder(
@@ -52,7 +51,6 @@ public class DigitalTimerWidget extends ClickableWidget {
 
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        // FIX: use getX() / getY() everywhere instead of this.x / this.y
         context.fill(this.getX(), this.getY() + 15, this.getX() + this.getWidth(), this.getY() + 45, 0x88000000);
 
         int segmentWidth = this.getWidth() / 4;
@@ -136,12 +134,9 @@ public class DigitalTimerWidget extends ClickableWidget {
                 seconds = Integer.parseInt(parts[2]);
             }
         } catch (Exception e) {
-            // Parse error, keep current values
         }
     }
 
-    // FIX: mouseClicked signature changed to (Click click, boolean bl) in 1.21.11.
-    // Click is a record with .x(), .y(), .button() accessors.
     @Override
     public boolean mouseClicked(Click click, boolean bl) {
         double mouseX = click.x();
@@ -159,10 +154,7 @@ public class DigitalTimerWidget extends ClickableWidget {
         return super.mouseClicked(click, bl);
     }
 
-    // FIX: GuiNavigationPathBuilder no longer exists — appendClickableNarrations now takes
-    // NarrationMessageBuilder; getNavigationPath replaces the old navigation override.
     @Override
     protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder) {
-        // No narration needed for this widget
     }
 }

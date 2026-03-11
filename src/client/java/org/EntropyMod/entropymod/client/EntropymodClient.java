@@ -16,13 +16,11 @@ import org.lwjgl.glfw.GLFW;
 public class EntropymodClient implements ClientModInitializer {
     public static KeyBinding openMenuKey;
 
-    // FIX: KeyBinding.Category.create(String, int) is private; the public factory takes an Identifier.
     public static final KeyBinding.Category ENTROPYMOD_CATEGORY =
             KeyBinding.Category.create(Identifier.of(Entropymod.MOD_ID, "general"));
 
     @Override
     public void onInitializeClient() {
-        // Register keybinding
         openMenuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.entropymod.open_menu",
                 InputUtil.Type.KEYSYM,
@@ -37,13 +35,10 @@ public class EntropymodClient implements ClientModInitializer {
             }
         });
 
-        // Register packet receivers
         registerPacketHandlers();
     }
 
     private void registerPacketHandlers() {
-        // FIX: The IDs live on the payload records as TimerUpdatePayload.ID / ChallengeStatePayload.ID.
-        // The receiver lambda receives a typed payload directly — no cast needed.
         ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.TimerUpdatePayload.ID,
                 (payload, context) -> {
                     String time = payload.time();
