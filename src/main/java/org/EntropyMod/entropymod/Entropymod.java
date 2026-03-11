@@ -56,7 +56,6 @@ public class Entropymod implements ModInitializer {
         TimerManager.getInstance().init(server);
         WorldFreezer.getInstance().init(server);
 
-        // KORRIGIERT: getPlayerCount() -> getPlayerManager().getPlayerList().size()
         LOGGER.info("Server started with {} players", server.getPlayerManager().getPlayerList().size());
     }
 

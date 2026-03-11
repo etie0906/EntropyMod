@@ -40,7 +40,6 @@ public class WorldFreezer {
         frozenTime = server.getOverworld().getTime();
 
         for (ServerWorld world : server.getWorlds()) {
-            // KORRIGIERT: GameRules.DO_DAYLIGHT_CYCLE als Key verwenden
             world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, server);
 
             for (Entity entity : world.getEntitiesByClass(Entity.class,
@@ -50,11 +49,8 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    // KORRIGIERT: setAiDisabled() statt setNoAi()
                     living.setAiDisabled(true);
                 }
-
-                // KORRIGIERT: getPos() -> getBlockPos() oder direct field access
                 frozenPositions.put(entity.getUuid(), entity.getPos());
                 frozenVelocities.put(entity.getUuid(), entity.getVelocity());
                 entity.setVelocity(Vec3d.ZERO);
@@ -64,7 +60,7 @@ public class WorldFreezer {
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             frozenPositions.put(player.getUuid(), player.getPos());
-            frozenVelocities.put(player.getVelocity());
+            frozenVelocities.put(player.getUuid(), player.getVelocity());
             player.setVelocity(Vec3d.ZERO);
             player.velocityDirty = true;
         }
@@ -85,7 +81,7 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    living.setAiDisabled(false);
+                    living.setNoAi(false);
                 }
 
                 Vec3d vel = frozenVelocities.get(entity.getUuid());
@@ -118,13 +114,9 @@ public class WorldFreezer {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             Vec3d frozenPos = frozenPositions.get(player.getUuid());
             if (frozenPos != null) {
-                // KORRIGIERT: Einfacher Teleport ohne PositionFlag
-                player.teleport(
-                        player.getServerWorld(),
-                        frozenPos.x, frozenPos.y, frozenPos.z,
-                        java.util.EnumSet.noneOf(net.minecraft.network.packet.s2c.play.PositionFlag.class),
-                        player.getYaw(), player.getPitch(),
-                        true
+                player.requestTeleport(
+                        (ServerWorld) player.getWorld(),
+                        frozenPos.x, frozenPos.y, frozenPos.z
                 );
                 player.setVelocity(Vec3d.ZERO);
                 player.velocityDirty = true;

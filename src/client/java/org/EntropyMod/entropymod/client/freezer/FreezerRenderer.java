@@ -20,7 +20,6 @@ public class FreezerRenderer implements HudRenderCallback {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
-        // Draw "FROZEN" text at top of screen
         int x = client.getWindow().getScaledWidth() / 2;
         int y = 30;
 

@@ -21,8 +21,6 @@ public class TimerManager {
     private String color = "WHITE";
     private Map<UUID, Boolean> frozenPlayers = new HashMap<>();
 
-    // ENTFERNE: import org.w3c.dom.Text; (war die falsche Text-Klasse)
-
     public static TimerManager getInstance() {
         if (instance == null) {
             instance = new TimerManager();
@@ -52,7 +50,6 @@ public class TimerManager {
         String timeStr = formatTime(time);
         Text timerText = formatColoredText(timeStr, color);
 
-        // KORRIGIERT: getPlayerManager() -> getPlayerManager()
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             player.sendMessage(timerText, true);
             ChallengePackets.sendTimerUpdate(player, timeStr, color, running ? "running" : "paused");
@@ -65,7 +62,6 @@ public class TimerManager {
         return String.format("%02d:%02d", mins, secs);
     }
 
-    // KORRIGIERT: Rückgabetyp ist net.minecraft.text.Text (nicht org.w3c.dom.Text)
     private Text formatColoredText(String text, String color) {
         try {
             if (color.startsWith("#")) {
@@ -96,7 +92,6 @@ public class TimerManager {
         frozenPlayers.remove(player.getUuid());
     }
 
-    // KORRIGIERT: getPlayerManager() statt getPlayerManager()
     private void broadcastMessage(String msg) {
         if (server != null) {
             server.getPlayerManager().broadcast(Text.literal("[EntropyMod] " + msg), false);
