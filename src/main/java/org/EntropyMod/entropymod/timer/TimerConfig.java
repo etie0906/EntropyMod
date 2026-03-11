@@ -1,8 +1,10 @@
 package org.EntropyMod.entropymod.timer;
 
 import net.minecraft.util.Identifier;
+import org.EntropyMod.entropymod.Entropymod;
 
 public class TimerConfig {
+    public static final Identifier TIMER_CONFIG_ID = Identifier.of(Entropymod.MOD_ID, "timer_config");
     private int days = 0;
     private int hours = 0;
     private int minutes = 0;

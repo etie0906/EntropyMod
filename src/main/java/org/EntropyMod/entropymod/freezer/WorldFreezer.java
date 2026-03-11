@@ -53,7 +53,7 @@ public class WorldFreezer {
 
         for (ServerWorld world : server.getWorlds()) {
             // Freeze time
-            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, server);
+            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false);
 
             // Freeze entities
             for (Entity entity : world.getEntitiesByClass(Entity.class,
@@ -94,7 +94,7 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    living.setAiDisabled(false);
+                    living.setNoAi(true);
                 }
             }
         }
@@ -117,7 +117,7 @@ public class WorldFreezer {
             if (frozenPos != null) {
                 // Teleport back if moved
                 if (player.squaredDistanceTo(frozenPos) > 0.01) {
-                    player.teleport(frozenPos.x, frozenPos.y, frozenPos.z);
+                    player.teleport(world, x, y, z, PositionFlag.VALUES, yaw, pitch, true);
                 }
                 player.setVelocity(Vec3d.ZERO);
                 player.velocityModified = true;
