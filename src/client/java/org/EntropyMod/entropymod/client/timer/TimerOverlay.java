@@ -3,6 +3,7 @@ package org.EntropyMod.entropymod.client.timer;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -15,8 +16,9 @@ public class TimerOverlay implements HudRenderCallback {
         HudRenderCallback.EVENT.register(new TimerOverlay());
     }
 
+    // FIX: onHudRender signature changed — float tickDelta replaced by RenderTickCounter
     @Override
-    public void onHudRender(DrawContext drawContext, float tickDelta) {
+    public void onHudRender(DrawContext drawContext, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 

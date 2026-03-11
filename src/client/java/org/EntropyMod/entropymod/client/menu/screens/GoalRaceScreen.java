@@ -18,14 +18,12 @@ public class GoalRaceScreen extends Screen {
         int centerX = this.width / 2;
         int y = 60;
 
-        // Title
         this.addDrawableChild(new net.minecraft.client.gui.widget.TextWidget(
                 centerX - 100, 30, 200, 20,
                 Text.literal("Select Race Goal").formatted(Formatting.GOLD, Formatting.BOLD),
                 this.textRenderer
         ));
 
-        // Wood Collection Race
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("🌲 Collect All Wood Types"),
                 this::selectWoodRace
@@ -33,7 +31,6 @@ public class GoalRaceScreen extends Screen {
 
         y += 30;
 
-        // Boss Kill Race
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("⚔ Kill All Bosses"),
                 this::selectBossRace
@@ -41,7 +38,6 @@ public class GoalRaceScreen extends Screen {
 
         y += 30;
 
-        // Achievement Race
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("🏆 Most Achievements"),
                 this::selectAchievementRace
@@ -49,40 +45,28 @@ public class GoalRaceScreen extends Screen {
 
         y += 30;
 
-        // Block Collection Race
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("⛏ Block Collection"),
                 this::selectBlockRace
         ).dimensions(centerX - 100, y, 200, 20).build());
 
-        // Back Button
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Back").formatted(Formatting.RED),
                 this::goBack
         ).dimensions(centerX - 50, this.height - 40, 100, 20).build());
     }
 
-    private void selectWoodRace(ButtonWidget button) {
-        startRace("wood");
-    }
-
-    private void selectBossRace(ButtonWidget button) {
-        startRace("boss");
-    }
-
-    private void selectAchievementRace(ButtonWidget button) {
-        startRace("achievement");
-    }
-
-    private void selectBlockRace(ButtonWidget button) {
-        startRace("block");
-    }
+    private void selectWoodRace(ButtonWidget button)        { startRace("wood"); }
+    private void selectBossRace(ButtonWidget button)        { startRace("boss"); }
+    private void selectAchievementRace(ButtonWidget button) { startRace("achievement"); }
+    private void selectBlockRace(ButtonWidget button)       { startRace("block"); }
 
     private void startRace(String type) {
         if (this.client != null && this.client.player != null) {
             this.client.player.networkHandler.sendChatCommand("race start " + type);
         }
-        goBack(button);
+        // FIX: 'button' was an undefined bare variable reference — call goBack with null instead
+        goBack(null);
     }
 
     private void goBack(ButtonWidget button) {

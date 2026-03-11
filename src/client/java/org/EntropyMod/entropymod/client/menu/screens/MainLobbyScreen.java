@@ -29,9 +29,7 @@ public class MainLobbyScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int centerY = this.height / 2;
 
-        // Title
         TextWidget title = new TextWidget(
                 centerX - 100, 20, 200, 20,
                 Text.literal("EntropyMod Challenges").formatted(Formatting.GOLD, Formatting.BOLD),
@@ -39,7 +37,6 @@ public class MainLobbyScreen extends Screen {
         );
         this.addDrawableChild(title);
 
-        // Player List (Left side)
         playerList = new PlayerListWidget(
                 this.client, 150, this.height - 100,
                 60, this.height - 40,
@@ -47,7 +44,6 @@ public class MainLobbyScreen extends Screen {
         );
         this.addDrawableChild(playerList);
 
-        // Challenge List (Center)
         challengeList = new ChallengeListWidget(
                 this.client, 200, this.height - 150,
                 centerX - 100, 80,
@@ -55,21 +51,20 @@ public class MainLobbyScreen extends Screen {
         );
         this.addDrawableChild(challengeList);
 
-        // Digital Timer (Top right)
         timerWidget = new DigitalTimerWidget(
                 this.width - 180, 60, 160, 80,
-                this::onTimerChanged
+                // FIX: DigitalTimerWidget calls onChange with int[] but onTimerChanged takes
+                // (int, int, int, int). Change to a lambda that unpacks the array.
+                values -> onTimerChanged(values[0], values[1], values[2], values[3])
         );
         this.addDrawableChild(timerWidget);
 
-        // Ready Button (Bottom center)
         readyButton = ButtonWidget.builder(
                 Text.literal("Ready").formatted(Formatting.GREEN),
                 this::toggleReady
         ).dimensions(centerX - 100, this.height - 50, 90, 20).build();
         this.addDrawableChild(readyButton);
 
-        // Force Start Button (Admin only, next to ready)
         forceStartButton = ButtonWidget.builder(
                 Text.literal("Force Start").formatted(Formatting.RED),
                 this::forceStart
@@ -77,11 +72,9 @@ public class MainLobbyScreen extends Screen {
         forceStartButton.active = isAdmin;
         this.addDrawableChild(forceStartButton);
 
-        // Right side buttons
         int rightX = this.width - 110;
         int buttonY = 160;
 
-        // Challenge Menu Button
         challengeMenuButton = ButtonWidget.builder(
                 Text.literal("⚔ Challenges"),
                 this::openChallengeMenu
@@ -89,7 +82,6 @@ public class MainLobbyScreen extends Screen {
         challengeMenuButton.active = isAdmin;
         this.addDrawableChild(challengeMenuButton);
 
-        // Settings Button
         settingsButton = ButtonWidget.builder(
                 Text.literal("⚙ Settings"),
                 this::openSettings
@@ -97,7 +89,6 @@ public class MainLobbyScreen extends Screen {
         settingsButton.active = isAdmin;
         this.addDrawableChild(settingsButton);
 
-        // Goal/Race Button
         goalRaceButton = ButtonWidget.builder(
                 Text.literal("🏁 Goal/Race"),
                 this::openGoalRace
@@ -105,16 +96,13 @@ public class MainLobbyScreen extends Screen {
         goalRaceButton.active = isAdmin;
         this.addDrawableChild(goalRaceButton);
 
-        // Request initial data from server
         requestServerData();
     }
 
     @Override
     public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
-        // Dark background
         this.renderBackground(context, mouseX, mouseY, delta);
 
-        // Draw section labels
         context.drawText(this.textRenderer,
                 Text.literal("Players").formatted(Formatting.WHITE, Formatting.UNDERLINE),
                 20, 45, 0xFFFFFF, false);
@@ -134,11 +122,6 @@ public class MainLobbyScreen extends Screen {
         isReady = !isReady;
         button.setMessage(Text.literal(isReady ? "Unready" : "Ready")
                 .formatted(isReady ? Formatting.RED : Formatting.GREEN));
-
-        // Send to server
-        if (this.client != null && this.client.player != null) {
-            // Network call to update ready status
-        }
     }
 
     private void forceStart(ButtonWidget button) {
@@ -148,48 +131,35 @@ public class MainLobbyScreen extends Screen {
     }
 
     private void openChallengeMenu(ButtonWidget button) {
-        if (this.client != null) {
-            this.client.setScreen(new ChallengeSelectScreen(this));
-        }
+        if (this.client != null) this.client.setScreen(new ChallengeSelectScreen(this));
     }
 
     private void openSettings(ButtonWidget button) {
-        if (this.client != null) {
-            this.client.setScreen(new SettingsScreen(this));
-        }
+        if (this.client != null) this.client.setScreen(new SettingsScreen(this));
     }
 
     private void openGoalRace(ButtonWidget button) {
-        if (this.client != null) {
-            this.client.setScreen(new GoalRaceScreen(this));
-        }
+        if (this.client != null) this.client.setScreen(new GoalRaceScreen(this));
     }
 
     private void onTimerChanged(int days, int hours, int minutes, int seconds) {
         // Send timer update to server
-        if (this.client != null && this.client.player != null) {
-            // Network call: /timer set d,hh:mm:ss
-        }
     }
 
     public void updateTimer(String time, String color, String state) {
-        if (timerWidget != null) {
-            timerWidget.updateTime(time, color, state);
-        }
+        if (timerWidget != null) timerWidget.updateTime(time, color, state);
     }
 
     public void updateChallengeState(String challengeId, boolean active) {
-        if (challengeList != null) {
-            challengeList.updateChallenge(challengeId, active);
-        }
+        if (challengeList != null) challengeList.updateChallenge(challengeId, active);
     }
 
     public void setAdmin(boolean admin) {
         this.isAdmin = admin;
-        if (forceStartButton != null) forceStartButton.active = admin;
+        if (forceStartButton   != null) forceStartButton.active   = admin;
         if (challengeMenuButton != null) challengeMenuButton.active = admin;
-        if (settingsButton != null) settingsButton.active = admin;
-        if (goalRaceButton != null) goalRaceButton.active = admin;
+        if (settingsButton     != null) settingsButton.active     = admin;
+        if (goalRaceButton     != null) goalRaceButton.active     = admin;
     }
 
     private void requestServerData() {

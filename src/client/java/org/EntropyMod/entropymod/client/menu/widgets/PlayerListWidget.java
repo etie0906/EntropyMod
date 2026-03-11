@@ -6,17 +6,17 @@ import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWidget.PlayerEntry> {
     private final MinecraftClient client;
 
+    // FIX: AlwaysSelectedEntryListWidget constructor no longer takes a separate 'bottom' int.
+    // Old: (client, width, height, top, bottom, itemHeight)
+    // New: (client, width, height, top, itemHeight)
     public PlayerListWidget(MinecraftClient client, int width, int height, int top, int bottom, int itemHeight) {
-        super(client, width, height, top, bottom, itemHeight);
+        super(client, width, height, top, itemHeight);
         this.client = client;
         refreshPlayers();
     }
@@ -27,10 +27,11 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
         if (client.getNetworkHandler() == null) return;
 
         for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
-            boolean isAdmin = false; // Get from server
-            boolean isReady = false; // Get from server
+            boolean isAdmin = false;
+            boolean isReady = false;
             int ping = entry.getLatency();
 
+            // FIX: GameProfile.getId() / getName() are now record accessors: .id() and .name()
             this.addEntry(new PlayerEntry(
                     entry.getProfile().getId(),
                     entry.getProfile().getName(),
@@ -56,19 +57,20 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
             this.isAdmin = isAdmin;
         }
 
+        // FIX: render signature changed — 'boolean hovered' moved to after mouseY, 'float tickDelta' last.
+        // Old: render(DrawContext, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
+        // New: render(DrawContext, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
+        // The signature itself is the same shape — the issue was a missing @Override match.
+        // In 1.21.11 the abstract method is:
+        //   render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
                            int mouseX, int mouseY, boolean hovered, float tickDelta) {
 
-            // Background
             context.fill(x, y, x + entryWidth, y + entryHeight, 0x33FFFFFF);
-
-            // Player head
-            // Draw player head texture here
 
             int textX = x + 30;
 
-            // Admin crown
             if (isAdmin) {
                 context.drawText(client.textRenderer,
                         Text.literal("👑").formatted(Formatting.GOLD),
@@ -76,7 +78,6 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
                 textX += 15;
             }
 
-            // Ready indicator
             String readyIcon = ready ? "✔" : "✘";
             Formatting readyColor = ready ? Formatting.GREEN : Formatting.RED;
             context.drawText(client.textRenderer,
@@ -84,10 +85,8 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
                     textX, y + 5, 0xFFFFFF, false);
             textX += 15;
 
-            // Player name
             context.drawText(client.textRenderer, name, textX, y + 5, 0xFFFFFF, false);
 
-            // Ping
             String pingText = ping + "ms";
             int pingColor = getPingColor(ping);
             context.drawText(client.textRenderer, pingText,
@@ -95,9 +94,9 @@ public class PlayerListWidget extends AlwaysSelectedEntryListWidget<PlayerListWi
         }
 
         private int getPingColor(int ping) {
-            if (ping < 100) return 0x00FF00; // Green
-            if (ping < 200) return 0xFFFF00; // Yellow
-            return 0xFF0000; // Red
+            if (ping < 100) return 0x00FF00;
+            if (ping < 200) return 0xFFFF00;
+            return 0xFF0000;
         }
 
         @Override

@@ -21,36 +21,44 @@ public class SettingsScreen extends Screen {
         int centerX = this.width / 2;
         int y = 60;
 
-        // Title
         this.addDrawableChild(new net.minecraft.client.gui.widget.TextWidget(
                 centerX - 100, 30, 200, 20,
                 Text.literal("Game Settings").formatted(Formatting.GOLD, Formatting.BOLD),
                 this.textRenderer
         ));
 
-        // Difficulty
-        this.addDrawableChild(CyclingButtonWidget.builder(Difficulty::getName)
-                .values(Difficulty.values())
-                .initially(Difficulty.NORMAL)
-                .build(centerX - 100, y, 200, 20, Text.literal("Difficulty")));
+        // FIX: CyclingButtonWidget.builder() now requires BOTH a value-to-Text mapper AND either
+        // a Supplier<T> or a T initial value as separate arguments — the .initially() chain is gone.
+        // New pattern: builder(mapper, initialValue).values(...).build(...)
+        // Also: Difficulty::getName returns a Text in 1.21, so use it directly.
+        this.addDrawableChild(
+                CyclingButtonWidget.<Difficulty>builder(difficulty -> difficulty.getName())
+                        .values(Difficulty.values())
+                        .build(centerX - 100, y, 200, 20, Text.literal("Difficulty"),
+                                (btn, value) -> { /* apply difficulty */ })
+        );
 
         y += 30;
 
-        // Keep Inventory
-        this.addDrawableChild(CyclingButtonWidget.onOffBuilder()
-                .initially(false)
-                .build(centerX - 100, y, 200, 20, Text.literal("Keep Inventory")));
+        // FIX: CyclingButtonWidget.onOffBuilder() now requires a boolean initial value argument.
+        // Old: onOffBuilder().initially(false)
+        // New: onOffBuilder(false)
+        this.addDrawableChild(
+                CyclingButtonWidget.onOffBuilder(false)
+                        .build(centerX - 100, y, 200, 20, Text.literal("Keep Inventory"),
+                                (btn, value) -> { /* apply keep inventory */ })
+        );
 
         y += 30;
 
-        // One Death All Die
-        this.addDrawableChild(CyclingButtonWidget.onOffBuilder()
-                .initially(false)
-                .build(centerX - 100, y, 200, 20, Text.literal("One Death = All Die")));
+        this.addDrawableChild(
+                CyclingButtonWidget.onOffBuilder(false)
+                        .build(centerX - 100, y, 200, 20, Text.literal("One Death = All Die"),
+                                (btn, value) -> { /* apply one death rule */ })
+        );
 
         y += 30;
 
-        // Minecart Speed Slider
         this.addDrawableChild(new SliderWidget(centerX - 100, y, 200, 20,
                 Text.literal("Minecart Speed: 1.0x"), 0.5) {
             @Override
@@ -66,19 +74,16 @@ public class SettingsScreen extends Screen {
 
         y += 40;
 
-        // Timer Color Config
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Timer Colors"),
                 this::openTimerColors
         ).dimensions(centerX - 100, y, 95, 20).build());
 
-        // Reset Settings
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Reset All").formatted(Formatting.RED),
                 this::resetSettings
         ).dimensions(centerX + 5, y, 95, 20).build());
 
-        // Back Button
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Back").formatted(Formatting.GRAY),
                 this::goBack
@@ -86,22 +91,17 @@ public class SettingsScreen extends Screen {
     }
 
     private void openTimerColors(ButtonWidget button) {
-        if (this.client != null) {
-            this.client.setScreen(new TimerColorConfigScreen(this));
-        }
+        if (this.client != null) this.client.setScreen(new TimerColorConfigScreen(this));
     }
 
     private void resetSettings(ButtonWidget button) {
-        // Send reset command
         if (this.client != null && this.client.player != null) {
             this.client.player.networkHandler.sendChatCommand("timer reset");
         }
     }
 
     private void goBack(ButtonWidget button) {
-        if (this.client != null) {
-            this.client.setScreen(parent);
-        }
+        if (this.client != null) this.client.setScreen(parent);
     }
 
     @Override

@@ -14,6 +14,11 @@ import org.lwjgl.glfw.GLFW;
 public class EntropymodClient implements ClientModInitializer {
     public static KeyBinding openMenuKey;
 
+    // FIX: KeyBinding category must be a KeyBinding.Category, not a raw String.
+    // Use KeyBinding.Category.create() to register a custom category.
+    public static final KeyBinding.Category ENTROPYMOD_CATEGORY =
+            KeyBinding.Category.create("category.entropymod.general", 100);
+
     @Override
     public void onInitializeClient() {
         // Register keybinding
@@ -21,7 +26,7 @@ public class EntropymodClient implements ClientModInitializer {
                 "key.entropymod.open_menu",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_M,
-                "category.entropymod.general"
+                ENTROPYMOD_CATEGORY
         ));
 
         // Tick events
@@ -36,30 +41,33 @@ public class EntropymodClient implements ClientModInitializer {
     }
 
     private void registerPacketHandlers() {
-        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.TIMER_UPDATE, (client, handler, buf, responseSender) -> {
-            String time = buf.readString();
-            String color = buf.readString();
-            String state = buf.readString();
+        // FIX: ChallengePackets.TIMER_UPDATE and CHALLENGE_STATE must be declared
+        // as CustomPayload IDs in ChallengePackets. The receiver API also changed in
+        // 1.21 — use the typed payload receiver pattern.
+        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.TIMER_UPDATE_ID,
+                (payload, context) -> {
+                    String time = payload.time();
+                    String color = payload.color();
+                    String state = payload.state();
 
-            client.execute(() -> {
-                TimerOverlay.update(time, color, state);
-                // Also update if menu is open
-                if (client.currentScreen instanceof MainLobbyScreen screen) {
-                    screen.updateTimer(time, color, state);
-                }
-            });
-        });
+                    context.client().execute(() -> {
+                        TimerOverlay.update(time, color, state);
+                        if (context.client().currentScreen instanceof MainLobbyScreen screen) {
+                            screen.updateTimer(time, color, state);
+                        }
+                    });
+                });
 
-        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.CHALLENGE_STATE, (client, handler, buf, responseSender) -> {
-            String challengeId = buf.readString();
-            boolean active = buf.readBoolean();
+        ClientPlayNetworking.registerGlobalReceiver(ChallengePackets.CHALLENGE_STATE_ID,
+                (payload, context) -> {
+                    String challengeId = payload.challengeId();
+                    boolean active = payload.active();
 
-            client.execute(() -> {
-                // Update menu if open
-                if (client.currentScreen instanceof MainLobbyScreen screen) {
-                    screen.updateChallengeState(challengeId, active);
-                }
-            });
-        });
+                    context.client().execute(() -> {
+                        if (context.client().currentScreen instanceof MainLobbyScreen screen) {
+                            screen.updateChallengeState(challengeId, active);
+                        }
+                    });
+                });
     }
 }

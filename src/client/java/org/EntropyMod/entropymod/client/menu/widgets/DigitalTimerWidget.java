@@ -1,6 +1,8 @@
 package org.EntropyMod.entropymod.client.menu.widgets;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.navigation.GuiNavigation;
+import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
@@ -27,76 +29,71 @@ public class DigitalTimerWidget extends ClickableWidget {
     }
 
     private void initButtons() {
-        int segmentWidth = this.width / 4;
+        int segmentWidth = this.getWidth() / 4;
 
-        // Plus buttons (above numbers)
+        // FIX: this.x / this.y are now private — use getX() / getY() instead
         for (int i = 0; i < 4; i++) {
             final int index = i;
             plusButtons[i] = ButtonWidget.builder(
                     Text.literal("+").formatted(Formatting.GREEN),
                     b -> increment(index)
-            ).dimensions(this.x + i * segmentWidth + 10, this.y, 20, 12).build();
+            ).dimensions(this.getX() + i * segmentWidth + 10, this.getY(), 20, 12).build();
         }
 
-        // Minus buttons (below numbers)
         for (int i = 0; i < 4; i++) {
             final int index = i;
             minusButtons[i] = ButtonWidget.builder(
                     Text.literal("-").formatted(Formatting.RED),
                     b -> decrement(index)
-            ).dimensions(this.x + i * segmentWidth + 10, this.y + 50, 20, 12).build();
+            ).dimensions(this.getX() + i * segmentWidth + 10, this.getY() + 50, 20, 12).build();
         }
     }
 
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Draw background
-        context.fill(this.x, this.y + 15, this.x + this.width, this.y + 45, 0x88000000);
+        // FIX: use getX() / getY() everywhere instead of this.x / this.y
+        context.fill(this.getX(), this.getY() + 15, this.getX() + this.getWidth(), this.getY() + 45, 0x88000000);
 
-        // Draw time segments
-        int segmentWidth = this.width / 4;
+        int segmentWidth = this.getWidth() / 4;
         String[] labels = {"Days", "Hours", "Mins", "Secs"};
         int[] values = {days, hours, minutes, seconds};
 
         for (int i = 0; i < 4; i++) {
-            int segX = this.x + i * segmentWidth;
+            int segX = this.getX() + i * segmentWidth;
 
-            // Label
             context.drawCenteredTextWithShadow(
                     net.minecraft.client.MinecraftClient.getInstance().textRenderer,
-                    labels[i], segX + segmentWidth / 2, this.y + 18, 0xAAAAAA
+                    labels[i], segX + segmentWidth / 2, this.getY() + 18, 0xAAAAAA
             );
 
-            // Value
             String valStr = String.format("%02d", values[i]);
-            if (i == 0) valStr = String.valueOf(values[i]); // Days without leading zero
+            if (i == 0) valStr = String.valueOf(values[i]);
 
             int colorCode = getColorCode();
             context.drawCenteredTextWithShadow(
                     net.minecraft.client.MinecraftClient.getInstance().textRenderer,
                     Text.literal(valStr).styled(s -> s.withColor(colorCode)),
-                    segX + segmentWidth / 2, this.y + 30, colorCode
+                    segX + segmentWidth / 2, this.getY() + 30, colorCode
             );
         }
 
-        // Render buttons
         for (ButtonWidget btn : plusButtons) btn.render(context, mouseX, mouseY, delta);
         for (ButtonWidget btn : minusButtons) btn.render(context, mouseX, mouseY, delta);
     }
 
     private int getColorCode() {
         return switch (state) {
-            case "RUNNING" -> 0x00FF00; // Green
-            case "PAUSED" -> 0xFFFF00; // Yellow
-            case "STOPPED" -> 0x888888; // Gray
-            default -> 0xFFFFFF;
+            case "RUNNING" -> 0x00FF00;
+            case "PAUSED"  -> 0xFFFF00;
+            case "STOPPED" -> 0x888888;
+            default        -> 0xFFFFFF;
         };
     }
 
     private void increment(int index) {
         switch (index) {
             case 0 -> days++;
-            case 1 -> hours = (hours + 1) % 24;
+            case 1 -> hours   = (hours   + 1) % 24;
             case 2 -> minutes = (minutes + 1) % 60;
             case 3 -> seconds = (seconds + 1) % 60;
         }
@@ -105,8 +102,8 @@ public class DigitalTimerWidget extends ClickableWidget {
 
     private void decrement(int index) {
         switch (index) {
-            case 0 -> days = Math.max(0, days - 1);
-            case 1 -> hours = (hours - 1 + 24) % 24;
+            case 0 -> days    = Math.max(0, days - 1);
+            case 1 -> hours   = (hours   - 1 + 24) % 24;
             case 2 -> minutes = (minutes - 1 + 60) % 60;
             case 3 -> seconds = (seconds - 1 + 60) % 60;
         }
@@ -123,18 +120,17 @@ public class DigitalTimerWidget extends ClickableWidget {
         this.color = color;
         this.state = state;
 
-        // Parse time string "d Day(s) hh:mm:ss" or "hh:mm:ss"
         try {
             if (timeStr.contains("Day")) {
                 String[] parts = timeStr.split(" ");
                 days = Integer.parseInt(parts[0]);
                 String[] timeParts = parts[parts.length - 1].split(":");
-                hours = Integer.parseInt(timeParts[0]);
+                hours   = Integer.parseInt(timeParts[0]);
                 minutes = Integer.parseInt(timeParts[1]);
                 seconds = Integer.parseInt(timeParts[2]);
             } else {
                 String[] parts = timeStr.split(":");
-                hours = Integer.parseInt(parts[0]);
+                hours   = Integer.parseInt(parts[0]);
                 minutes = Integer.parseInt(parts[1]);
                 seconds = Integer.parseInt(parts[2]);
             }
@@ -143,17 +139,27 @@ public class DigitalTimerWidget extends ClickableWidget {
         }
     }
 
+    // FIX: mouseClicked(double, double, int) is gone — signature is now mouseClicked(Click, boolean).
+    // Delegate to child buttons using their own isMouseOver + onClick logic instead.
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (ButtonWidget btn : plusButtons) {
-            if (btn.mouseClicked(mouseX, mouseY, button)) return true;
+            if (btn.isMouseOver(mouseX, mouseY)) {
+                return btn.mouseClicked(mouseX, mouseY, button);
+            }
         }
         for (ButtonWidget btn : minusButtons) {
-            if (btn.mouseClicked(mouseX, mouseY, button)) return true;
+            if (btn.isMouseOver(mouseX, mouseY)) {
+                return btn.mouseClicked(mouseX, mouseY, button);
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    // FIX: GuiNavigationPathBuilder no longer exists — appendClickableNarrations now takes
+    // NarrationMessageBuilder; getNavigationPath replaces the old navigation override.
     @Override
-    protected void appendClickableNarrations(net.minecraft.client.gui.navigation.GuiNavigationPathBuilder builder) {}
+    protected void appendClickableNarrations(net.minecraft.client.gui.screen.narration.NarrationMessageBuilder builder) {
+        // No narration needed for this widget
+    }
 }

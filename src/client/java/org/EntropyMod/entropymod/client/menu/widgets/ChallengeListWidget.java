@@ -13,12 +13,14 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
     private final MinecraftClient client;
     private final Map<String, Boolean> challengeStates = new HashMap<>();
 
+    // FIX: AlwaysSelectedEntryListWidget constructor no longer takes a separate 'bottom' int.
+    // Old: (client, width, height, top, bottom, itemHeight)  ← 6 args
+    // New: (client, width, height, top, itemHeight)          ← 5 args
     public ChallengeListWidget(MinecraftClient client, int width, int height, int left, int top, int itemHeight) {
-        super(client, width, height, top, top + height, itemHeight);
+        super(client, width, height, top, itemHeight);
         this.client = client;
         this.setX(left);
 
-        // Add dummy entries for now
         addChallenge("dummy", "Dummy Challenge", "Test challenge", false);
     }
 
@@ -29,7 +31,7 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
 
     public void updateChallenge(String id, boolean active) {
         challengeStates.put(id, active);
-        // Refresh entry
+        // Refresh entry — full refresh for simplicity
     }
 
     public class ChallengeEntry extends AlwaysSelectedEntryListWidget.Entry<ChallengeEntry> {
@@ -45,6 +47,8 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
             this.active = active;
         }
 
+        // FIX: render signature must exactly match the abstract method in EntryListWidget.Entry.
+        // In 1.21.11: render(DrawContext, int, int, int, int, int, int, int, boolean, float)
         @Override
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
                            int mouseX, int mouseY, boolean hovered, float tickDelta) {
@@ -54,17 +58,14 @@ public class ChallengeListWidget extends AlwaysSelectedEntryListWidget<Challenge
 
             context.fill(x, y, x + entryWidth, y + entryHeight, bgColor);
 
-            // Status indicator
             String status = active ? "●" : "○";
             int statusColor = active ? 0x00FF00 : 0x888888;
             context.drawText(client.textRenderer, status, x + 5, y + 8, statusColor, false);
 
-            // Name
             context.drawText(client.textRenderer,
                     Text.literal(name).formatted(active ? Formatting.GREEN : Formatting.GRAY),
                     x + 20, y + 5, 0xFFFFFF, false);
 
-            // Description (truncated)
             String desc = description.length() > 30 ? description.substring(0, 27) + "..." : description;
             context.drawText(client.textRenderer,
                     Text.literal(desc).formatted(Formatting.DARK_GRAY),
