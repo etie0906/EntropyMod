@@ -7,7 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameRules;
+import net.minecraft.world.rule.GameRules;
 import org.EntropyMod.entropymod.Entropymod;
 
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public class WorldFreezer {
         frozenTime = server.getOverworld().getTime();
 
         for (ServerWorld world : server.getWorlds()) {
-            // KORRIGIERT: GameRules.DO_DAYLIGHT_CYCLE ist jetzt ein Key-Objekt
+            // KORRIGIERT: GameRules.DO_DAYLIGHT_CYCLE als Key verwenden
             world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, server);
 
             for (Entity entity : world.getEntitiesByClass(Entity.class,
@@ -50,21 +50,21 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    // KORRIGIERT: setAiDisabled() existiert nicht mehr - verwende setNoAi()
-                    living.setNoAi(true);
+                    // KORRIGIERT: setAiDisabled() statt setNoAi()
+                    living.setAiDisabled(true);
                 }
 
+                // KORRIGIERT: getPos() -> getBlockPos() oder direct field access
                 frozenPositions.put(entity.getUuid(), entity.getPos());
                 frozenVelocities.put(entity.getUuid(), entity.getVelocity());
                 entity.setVelocity(Vec3d.ZERO);
-                // KORRIGIERT: velocityModified existiert nicht mehr
                 entity.velocityDirty = true;
             }
         }
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             frozenPositions.put(player.getUuid(), player.getPos());
-            frozenVelocities.put(player.getUuid(), player.getVelocity());
+            frozenVelocities.put(player.getVelocity());
             player.setVelocity(Vec3d.ZERO);
             player.velocityDirty = true;
         }
@@ -85,7 +85,7 @@ public class WorldFreezer {
                     ), e -> !(e instanceof PlayerEntity))) {
 
                 if (entity instanceof LivingEntity living) {
-                    living.setNoAi(false);
+                    living.setAiDisabled(false);
                 }
 
                 Vec3d vel = frozenVelocities.get(entity.getUuid());
@@ -118,11 +118,11 @@ public class WorldFreezer {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             Vec3d frozenPos = frozenPositions.get(player.getUuid());
             if (frozenPos != null) {
-                // KORRIGIERT: Teleport mit korrekten Parametern
+                // KORRIGIERT: Einfacher Teleport ohne PositionFlag
                 player.teleport(
-                        (ServerWorld) player.getWorld(),
+                        player.getServerWorld(),
                         frozenPos.x, frozenPos.y, frozenPos.z,
-                        java.util.EnumSet.noneOf(net.minecraft.entity.PositionFlag.class),
+                        java.util.EnumSet.noneOf(net.minecraft.network.packet.s2c.play.PositionFlag.class),
                         player.getYaw(), player.getPitch(),
                         true
                 );

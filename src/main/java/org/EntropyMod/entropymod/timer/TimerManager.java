@@ -4,7 +4,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.world.GameRules;
+import net.minecraft.world.rule.GameRules;
 import org.EntropyMod.entropymod.Entropymod;
 import org.EntropyMod.entropymod.network.ChallengePackets;
 
