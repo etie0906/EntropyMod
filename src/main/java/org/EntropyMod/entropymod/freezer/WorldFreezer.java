@@ -1,14 +1,13 @@
 package org.EntropyMod.entropymod.freezer;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.rule.GameRules;
-import org.EntropyMod.entropymod.Entropymod;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +39,7 @@ public class WorldFreezer {
         frozenTime = server.getOverworld().getTime();
 
         for (ServerWorld world : server.getWorlds()) {
-            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(false, server);
+            world.getGameRules().setValue(GameRules.ADVANCE_TIME, false, server);
 
             for (Entity entity : world.getEntitiesByClass(Entity.class,
                     new net.minecraft.util.math.Box(
@@ -48,8 +47,8 @@ public class WorldFreezer {
                             Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
                     ), e -> !(e instanceof PlayerEntity))) {
 
-                if (entity instanceof LivingEntity living) {
-                    living.setAiDisabled(true);
+                if (entity instanceof MobEntity mob) {
+                    mob.setAiDisabled(true);
                 }
                 frozenPositions.put(entity.getUuid(), entity.getPos());
                 frozenVelocities.put(entity.getUuid(), entity.getVelocity());
@@ -72,7 +71,7 @@ public class WorldFreezer {
         frozen = false;
 
         for (ServerWorld world : server.getWorlds()) {
-            world.getGameRules().get(GameRules.DO_DAYLIGHT_CYCLE).set(true, server);
+            world.getGameRules().setValue(GameRules.ADVANCE_TIME, true, server);
 
             for (Entity entity : world.getEntitiesByClass(Entity.class,
                     new net.minecraft.util.math.Box(
@@ -80,8 +79,8 @@ public class WorldFreezer {
                             Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
                     ), e -> !(e instanceof PlayerEntity))) {
 
-                if (entity instanceof LivingEntity living) {
-                    living.setNoAi(false);
+                if (entity instanceof MobEntity mob) {
+                    mob.setAiDisabled(false);
                 }
 
                 Vec3d vel = frozenVelocities.get(entity.getUuid());
@@ -114,10 +113,7 @@ public class WorldFreezer {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             Vec3d frozenPos = frozenPositions.get(player.getUuid());
             if (frozenPos != null) {
-                player.requestTeleport(
-                        (ServerWorld) player.getWorld(),
-                        frozenPos.x, frozenPos.y, frozenPos.z
-                );
+                player.requestTeleport(frozenPos.x, frozenPos.y, frozenPos.z);
                 player.setVelocity(Vec3d.ZERO);
                 player.velocityDirty = true;
             }
