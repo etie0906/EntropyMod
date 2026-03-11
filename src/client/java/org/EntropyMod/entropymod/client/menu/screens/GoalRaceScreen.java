@@ -51,7 +51,7 @@ public class GoalRaceScreen extends Screen {
         ).dimensions(centerX - 100, y, 200, 20).build());
 
         this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Back").formatted(Formatting.RED),
+                Text.literal("Back").formatted(Formatting.DARK_RED),
                 this::goBack
         ).dimensions(centerX - 50, this.height - 40, 100, 20).build());
     }
