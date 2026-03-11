@@ -1,2 +1,46 @@
-Copyright (c) 2026 lofeiml(etie09)
+ENGLISH:
+Copyright (c) 2025-2026 Etienne (Minecraft: lofeiml)
+
 All rights reserved.
+
+This mod may not be copied, modified, decompiled, sold, redistributed, or reuploaded—whether in full or in part, as source code or compiled binary—without the express permission of the author.
+
+Usage of this mod is permitted only in its original, unmodified form. It may only be downloaded from the official source provided by the author (e.g., the Modrinth link).
+
+Any unauthorized use, distribution, or modification of this mod constitutes a violation of copyright law and may result in legal consequences.
+
+GERMAN:
+Copyright (c) 2025-2026 Etienne (Minecraft: lofeiml)
+
+Alle Rechte vorbehalten.
+
+Diese Mod darf ohne ausdrückliche Genehmigung des Autors nicht kopiert, verändert, dekompiliert, verkauft, weiterverbreitet oder erneut hochgeladen werden – weder ganz noch in Teilen, weder als Quellcode noch als Binärdatei.
+
+Die Nutzung der Mod ist ausschließlich in ihrer originalen, unveränderten Form erlaubt. Sie darf nur über die vom Autor bereitgestellte offizielle Quelle (z.B. der Modrinth-Link) heruntergeladen werden.
+
+Jede nicht autorisierte Nutzung, Verbreitung oder Änderung dieser Mod stellt einen Verstoß gegen das Urheberrecht dar und kann rechtliche Konsequenzen nach sich ziehen.
+
+Wenn Sie die Mod in einem Modpack benutzen wollen und veröffentlichen möchten kontaktieren Sie mich bitte über Discord(Username: etie09),
+
+RUSSIAN:
+Авторское право (c) 2025-2026 Etienne (Minecraft: lofeiml)
+
+Все права защищены.
+
+Этот мод не может быть скопирован, модифицирован, декомпилирован, продан, перераспространён или повторно загружен — полностью или частично, в исходном коде или в виде собранного файла — без явного разрешения автора.
+
+Использование данного мода разрешено только в его оригинальной, неизменённой форме. Загрузка разрешена только с официального источника, предоставленного автором (например, ссылка на Modrinth).
+
+Любое несанкционированное использование, распространение или модификация данного мода является нарушением авторских прав и может повлечь за собой юридическую ответственность.
+
+
+JAPANESE:
+著作権 (c) 2025-2026 Etienne (Minecraft: lofeiml)
+
+全著作権所有。
+
+このMODは、著者の明確な許可なく、全部または一部をコピー、改変、逆コンパイル、販売、再配布、再アップロードすることはできません（ソースコードまたはバイナリ形式のいずれであっても）。
+
+このMODは、作者が提供する公式リンク（例：Modrinthリンク）からのみ、元の変更されていない形で使用することが許可されています。
+
+無断での使用、配布、または改変は著作権侵害となり、法的措置の対象となる場合があります。
