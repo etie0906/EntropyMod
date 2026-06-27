@@ -11,7 +11,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.EntropyMod.entropymod.client.menu.widgets.DigitalTimerWidget;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -86,24 +85,24 @@ public class MainLobbyScreen extends Screen {
                 Math.min(cw, 300), 70,
                 values -> {
                     int total = values[0] * 86400 + values[1] * 3600 + values[2] * 60 + values[3];
-                    sendCommand("timer set " + total);
+                    execCmd("timer set " + total);
                 }));
 
         int by = cy + 180;
         startBtn = new FlatButton(cx, by, 80, 22, "Start", 0xFF2E7D32, 0xFF4CAF50,
-                () -> sendCommand("timer resume"));
+                () -> execCmd("timer resume"));
         addDrawableChild(startBtn);
 
         pauseBtn = new FlatButton(cx + 88, by, 80, 22, "Pause", 0xFF8D6E00, 0xFFFFB300,
-                () -> sendCommand("timer pause"));
+                () -> execCmd("timer pause"));
         addDrawableChild(pauseBtn);
 
         resumeBtn = new FlatButton(cx + 176, by, 80, 22, "Resume", 0xFF00695C, 0xFF26A69A,
-                () -> sendCommand("timer resume"));
+                () -> execCmd("timer resume"));
         addDrawableChild(resumeBtn);
 
         stopBtn = new FlatButton(cx + 264, by, 80, 22, "Stop", 0xFFB71C1C, 0xFFEF5350,
-                () -> sendCommand("timer stop"));
+                () -> execCmd("timer stop"));
         addDrawableChild(stopBtn);
 
         colorBtn = new FlatButton(cx, by + 32, 120, 22, "Timer Color", 0xFF37474F, 0xFF546E7A,
@@ -140,17 +139,17 @@ public class MainLobbyScreen extends Screen {
         addDrawableChild(new FlatButton(sx, by, 120, bh, "▶ Start Selected", 0xFF2E7D32, 0xFF4CAF50,
                 () -> {
                     for (String id : selectedChallengeIds) {
-                        sendCommand("challenge start " + id);
+                        execCmd("challenge start " + id);
                     }
                     selectedChallengeIds.clear();
                     buildContent();
                 }));
 
         addDrawableChild(new FlatButton(sx, by + bh + 6, 120, bh, "■ Stop All", 0xFF6D1C1C, 0xFFD32F2F,
-                () -> sendCommand("challenge stop")));
+                () -> execCmd("challenge stop")));
 
         addDrawableChild(new FlatButton(sx, by + 2 * (bh + 6), 120, bh, "Test", 0xFF37474F, 0xFF546E7A,
-                () -> sendCommand("challenge test")));
+                () -> execCmd("challenge test")));
     }
 
     private void addChallengeToggle(int x, int y, int w, int h, String id, String label) {
@@ -201,28 +200,12 @@ public class MainLobbyScreen extends Screen {
                 }));
 
         addDrawableChild(new FlatButton(cx, cy + 60, 130, 22, "Reset Timer", 0xFF6D1C1C, 0xFFD32F2F,
-                () -> sendCommand("timer set 0")));
+                () -> execCmd("timer set 0")));
     }
 
-    private void sendCommand(String cmd) {
+    private void execCmd(String cmd) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc == null) return;
-
-        // Try integrated server directly first (works in singleplayer)
-        if (mc.getServer() != null) {
-            try {
-                com.mojang.brigadier.ParseResults<net.minecraft.server.command.ServerCommandSource> parse =
-                        mc.getServer().getCommandManager().getDispatcher().parse(cmd,
-                                mc.getServer().getCommandSource());
-                mc.getServer().getCommandManager().getDispatcher().execute(parse);
-            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
-                // command failed
-            }
-            return;
-        }
-
-        // Fallback: send over network (multiplayer)
-        if (mc.player != null)
+        if (mc != null && mc.player != null)
             mc.player.networkHandler.sendChatCommand(cmd);
     }
 
@@ -249,6 +232,7 @@ public class MainLobbyScreen extends Screen {
         int startY = 50;
         int btnH = 35;
         int spacing = 4;
+
         for (int i = 0; i < tabNames.length; i++) {
             int btnY = startY + i * (btnH + spacing);
             boolean hovered = mouseX >= SIDEBAR_PAD && mouseX <= SIDEBAR_WIDTH - SIDEBAR_PAD
@@ -260,7 +244,12 @@ public class MainLobbyScreen extends Screen {
 
             if (selected)
                 context.fill(SIDEBAR_PAD, btnY, SIDEBAR_PAD + 2, btnY + btnH, 0xFF6688CC);
+        }
 
+        // Draw text in a second pass to ensure it's on TOP of all fills
+        for (int i = 0; i < tabNames.length; i++) {
+            int btnY = startY + i * (btnH + spacing);
+            boolean selected = i == selectedCategory;
             int textColor = selected ? 0xFFFFFF : 0xAAAAAA;
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.literal(tabNames[i]),
