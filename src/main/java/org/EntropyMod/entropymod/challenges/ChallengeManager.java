@@ -109,6 +109,15 @@ public class ChallengeManager {
         return new ArrayList<>(activeChallenges);
     }
 
+    public boolean isChallengeActive(String id) {
+        Challenge c = availableChallenges.get(id);
+        return c != null && c.isActive();
+    }
+
+    public Challenge getChallenge(String id) {
+        return availableChallenges.get(id);
+    }
+
     public void onPlayerJoin(ServerPlayerEntity player) {
     }
 

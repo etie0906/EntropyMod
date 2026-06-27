@@ -85,24 +85,24 @@ public class MainLobbyScreen extends Screen {
                 Math.min(cw, 300), 70,
                 values -> {
                     int total = values[0] * 86400 + values[1] * 3600 + values[2] * 60 + values[3];
-                    execCmd("timer set " + total);
+                    sendCmd("timer set " + total);
                 }));
 
         int by = cy + 180;
         startBtn = new FlatButton(cx, by, 80, 22, "Start", 0xFF2E7D32, 0xFF4CAF50,
-                () -> execCmd("timer resume"));
+                () -> sendCmd("timer resume"));
         addDrawableChild(startBtn);
 
         pauseBtn = new FlatButton(cx + 88, by, 80, 22, "Pause", 0xFF8D6E00, 0xFFFFB300,
-                () -> execCmd("timer pause"));
+                () -> sendCmd("timer pause"));
         addDrawableChild(pauseBtn);
 
         resumeBtn = new FlatButton(cx + 176, by, 80, 22, "Resume", 0xFF00695C, 0xFF26A69A,
-                () -> execCmd("timer resume"));
+                () -> sendCmd("timer resume"));
         addDrawableChild(resumeBtn);
 
         stopBtn = new FlatButton(cx + 264, by, 80, 22, "Stop", 0xFFB71C1C, 0xFFEF5350,
-                () -> execCmd("timer stop"));
+                () -> sendCmd("timer stop"));
         addDrawableChild(stopBtn);
 
         colorBtn = new FlatButton(cx, by + 32, 120, 22, "Timer Color", 0xFF37474F, 0xFF546E7A,
@@ -138,18 +138,28 @@ public class MainLobbyScreen extends Screen {
         int sx = bx + bw + 20;
         addDrawableChild(new FlatButton(sx, by, 120, bh, "▶ Start Selected", 0xFF2E7D32, 0xFF4CAF50,
                 () -> {
-                    for (String id : selectedChallengeIds) {
-                        execCmd("challenge start " + id);
+                    if (MinecraftClient.getInstance().player != null) {
+                        for (String id : selectedChallengeIds) {
+                            MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge start " + id);
+                        }
                     }
                     selectedChallengeIds.clear();
                     buildContent();
                 }));
 
         addDrawableChild(new FlatButton(sx, by + bh + 6, 120, bh, "■ Stop All", 0xFF6D1C1C, 0xFFD32F2F,
-                () -> execCmd("challenge stop")));
+                () -> {
+                    if (MinecraftClient.getInstance().player != null) {
+                        MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge stop");
+                    }
+                }));
 
         addDrawableChild(new FlatButton(sx, by + 2 * (bh + 6), 120, bh, "Test", 0xFF37474F, 0xFF546E7A,
-                () -> execCmd("challenge test")));
+                () -> {
+                    if (MinecraftClient.getInstance().player != null) {
+                        MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge test");
+                    }
+                }));
     }
 
     private void addChallengeToggle(int x, int y, int w, int h, String id, String label) {
@@ -167,17 +177,17 @@ public class MainLobbyScreen extends Screen {
                 boolean isActive = activeChallenges.contains(id);
                 boolean hovered = isMouseOver(mx, my);
 
-                int bg = isActive ? 0xCC1B5E20 : (isSelected ? 0xCC1A237E : (hovered ? 0x66333366 : 0x44222244));
-                int border = isActive ? 0xFF4CAF50 : (isSelected ? 0xFF448AFF : (hovered ? 0x885555AA : 0x33000000));
+                int bg = isActive ? 0xFF1B5E20 : (isSelected ? 0xFF1A237E : (hovered ? 0xFF2E3A54 : 0xFF1E2838));
+                int border = isActive ? 0xFF4CAF50 : (isSelected ? 0xFF448AFF : (hovered ? 0xFF546E7A : 0x00000000));
                 context.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), bg);
                 context.fill(getX(), getY(), getX() + getWidth(), getY() + 2, border);
 
-                int txtColor = isActive ? 0xFF81C784 : (isSelected ? 0xFF82B1FF : (hovered ? 0xCCCCFF : 0xAAAAAA));
+                int txtColor = isActive ? 0xFF81C784 : (isSelected ? 0xFF82B1FF : (hovered ? 0xFFFFFFFF : 0xFFCCCCCC));
                 String prefix = isActive ? "●" : (isSelected ? "[X]" : "[ ]");
                 String display = prefix + " " + label;
                 TextRenderer tr = MinecraftClient.getInstance().textRenderer;
                 context.drawText(tr, Text.literal(display),
-                        getX() + 8, getY() + (h - 8) / 2, txtColor, false);
+                        getX() + 8, getY() + (getHeight() - 8) / 2, txtColor, false);
             }
         });
     }
@@ -200,29 +210,27 @@ public class MainLobbyScreen extends Screen {
                 }));
 
         addDrawableChild(new FlatButton(cx, cy + 60, 130, 22, "Reset Timer", 0xFF6D1C1C, 0xFFD32F2F,
-                () -> execCmd("timer set 0")));
+                () -> sendCmd("timer set 0")));
     }
 
-    private void execCmd(String cmd) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc != null && mc.player != null)
-            mc.player.networkHandler.sendChatCommand(cmd);
+    private void sendCmd(String cmd) {
+        if (MinecraftClient.getInstance().player != null)
+            MinecraftClient.getInstance().player.networkHandler.sendChatCommand(cmd);
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        // no-op — eigene Volldeckung in render()
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         context.fill(0, 0, width, height, 0xFF0A0A1A);
-        drawSidebar(context, mouseX, mouseY);
         super.render(context, mouseX, mouseY, delta);
+        drawSidebar(context, mouseX, mouseY);
 
         String versionLabel = "Version: " + versionString;
         int vw = textRenderer.getWidth(versionLabel);
-        context.drawText(textRenderer, versionLabel, width - vw - 10, height - 15, 0x555555, false);
+        context.drawText(textRenderer, versionLabel, width - vw - 10, height - 15, 0xFF555555, false);
     }
 
     private void drawSidebar(DrawContext context, int mouseX, int mouseY) {
@@ -231,7 +239,7 @@ public class MainLobbyScreen extends Screen {
 
         context.drawText(textRenderer,
                 Text.literal("EntropyMod").formatted(Formatting.BOLD, Formatting.GOLD),
-                SIDEBAR_PAD, 15, 0xFFFFFF, false);
+                SIDEBAR_PAD, 15, 0xFFFFFFFF, false);
 
         String[] tabNames = {"Timer", "Challenges", "Settings"};
         int startY = 50;
@@ -249,12 +257,16 @@ public class MainLobbyScreen extends Screen {
 
             if (selected)
                 context.fill(SIDEBAR_PAD, btnY, SIDEBAR_PAD + 2, btnY + btnH, 0xFF6688CC);
+        }
 
-            int textColor = selected ? 0xFFFFFF : 0xAAAAAA;
-            String tab = tabNames[i];
-            int txtW = textRenderer.getWidth(tab);
-            context.drawText(textRenderer, Text.literal(tab),
-                    (SIDEBAR_WIDTH - txtW) / 2, btnY + (btnH - 8) / 2, textColor, false);
+        // Sidebar-Text: UNBEDINGT in eigenem Loop am Ende, immer, ohne Bedingung
+        for (int i = 0; i < tabNames.length; i++) {
+            int btnY = startY + i * (btnH + spacing);
+            boolean selected = i == selectedCategory;
+            int textColor = selected ? 0xFFFFFFFF : 0xFFAAAAAA;
+            context.drawCenteredTextWithShadow(textRenderer,
+                    Text.literal(tabNames[i]),
+                    SIDEBAR_WIDTH / 2, btnY + (btnH - 8) / 2, textColor);
         }
     }
 
