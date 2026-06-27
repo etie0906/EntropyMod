@@ -210,10 +210,15 @@ public class MainLobbyScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        // no-op — eigene Volldeckung in render()
+    }
+
+    @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, 0xBB0A0A1A);
-        super.render(context, mouseX, mouseY, delta);
+        context.fill(0, 0, width, height, 0xFF0A0A1A);
         drawSidebar(context, mouseX, mouseY);
+        super.render(context, mouseX, mouseY, delta);
 
         String versionLabel = "Version: " + versionString;
         int vw = textRenderer.getWidth(versionLabel);
@@ -221,8 +226,8 @@ public class MainLobbyScreen extends Screen {
     }
 
     private void drawSidebar(DrawContext context, int mouseX, int mouseY) {
-        context.fill(0, 0, SIDEBAR_WIDTH, height, 0xDD151528);
-        context.fill(SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH + 2, height, 0x99333355);
+        context.fill(0, 0, SIDEBAR_WIDTH, height, 0xFF151528);
+        context.fill(SIDEBAR_WIDTH, 0, SIDEBAR_WIDTH + 2, height, 0xFF333355);
 
         context.drawText(textRenderer,
                 Text.literal("EntropyMod").formatted(Formatting.BOLD, Formatting.GOLD),
@@ -244,16 +249,12 @@ public class MainLobbyScreen extends Screen {
 
             if (selected)
                 context.fill(SIDEBAR_PAD, btnY, SIDEBAR_PAD + 2, btnY + btnH, 0xFF6688CC);
-        }
 
-        // Draw text in a second pass to ensure it's on TOP of all fills
-        for (int i = 0; i < tabNames.length; i++) {
-            int btnY = startY + i * (btnH + spacing);
-            boolean selected = i == selectedCategory;
             int textColor = selected ? 0xFFFFFF : 0xAAAAAA;
-            context.drawCenteredTextWithShadow(this.textRenderer,
-                    Text.literal(tabNames[i]),
-                    SIDEBAR_WIDTH / 2, btnY + (btnH - 8) / 2, textColor);
+            String tab = tabNames[i];
+            int txtW = textRenderer.getWidth(tab);
+            context.drawText(textRenderer, Text.literal(tab),
+                    (SIDEBAR_WIDTH - txtW) / 2, btnY + (btnH - 8) / 2, textColor, false);
         }
     }
 
