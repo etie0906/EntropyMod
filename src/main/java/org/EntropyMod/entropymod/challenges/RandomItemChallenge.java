@@ -3,32 +3,70 @@ package org.EntropyMod.entropymod.challenges;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 
 public class RandomItemChallenge implements Challenge {
-    private boolean active = false;
+    private static boolean active = false;
+    private static final Random random = new Random();
+    private static final Map<Block, Item> blockDropMap = new HashMap<>();
+    private static final Map<Item, Item> itemReplacementMap = new HashMap<>();
+
     private int ticksUntilNextItem = 0;
-    private final Random random = new Random();
     private int stackSize = 1;
     private int finalStackSize = 1;
     private MinecraftServer server;
 
-    private final Map<Block, Item> blockDropMap = new HashMap<>();
-    private final Map<Item, Item> itemReplacementMap = new HashMap<>();
+    static {
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) -> {
+            if (!active) return true;
+            if (!(player instanceof ServerPlayerEntity)) return true;
+
+            Block block = state.getBlock();
+            Item replacement = blockDropMap.get(block);
+            if (replacement != null && !world.isClient()) {
+                world.breakBlock(pos, false);
+                world.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), 3);
+                ItemStack drop = new ItemStack(replacement, 1);
+                world.spawnEntity(new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, drop));
+                return false;
+            }
+            return true;
+        });
+
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (!active) return;
+            if (entity.getEntityWorld().isClient()) return;
+
+            net.minecraft.server.world.ServerWorld world = (net.minecraft.server.world.ServerWorld) entity.getEntityWorld();
+            Box box = entity.getBoundingBox().expand(5.0);
+            List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, box, e -> true);
+
+            for (ItemEntity itemEntity : items) {
+                ItemStack stack = itemEntity.getStack();
+                Item originalItem = stack.getItem();
+                Item replacement = itemReplacementMap.get(originalItem);
+
+                if (replacement != null) {
+                    int count = stack.getCount();
+                    ItemStack newStack = new ItemStack(replacement, count);
+                    ItemEntity newEntity = new ItemEntity(world,
+                            itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), newStack);
+                    newEntity.setVelocity(itemEntity.getVelocity());
+                    itemEntity.discard();
+                    world.spawnEntity(newEntity);
+                }
+            }
+        });
+    }
 
     @Override
     public String getId() { return "random_item"; }
@@ -47,7 +85,6 @@ public class RandomItemChallenge implements Challenge {
         active = true;
         ticksUntilNextItem = 1200;
         initializeDropMaps();
-        registerEvents();
 
         for (ServerPlayerEntity player : players) {
             player.sendMessage(Text.literal(String.format("§aRandom Item Challenge gestartet! §e(Stack-Größe: %d)", stackSize)), false);
@@ -102,7 +139,7 @@ public class RandomItemChallenge implements Challenge {
     public boolean isActive() { return active; }
 
     @Override
-    public void setActive(boolean active) { this.active = active; }
+    public void setActive(boolean active) { RandomItemChallenge.active = active; }
 
     public void skipWait() {
         ticksUntilNextItem = 0;
@@ -115,73 +152,15 @@ public class RandomItemChallenge implements Challenge {
 
     private void initializeDropMaps() {
         List<Item> allItems = Registries.ITEM.stream().toList();
-        if (allItems.isEmpty()) {
-            System.err.println("Keine Items im Register gefunden.");
-            return;
-        }
+        if (allItems.isEmpty()) return;
 
         for (Block block : Registries.BLOCK) {
-            Item randomItem = allItems.get(random.nextInt(allItems.size()));
-            blockDropMap.put(block, randomItem);
+            blockDropMap.put(block, allItems.get(random.nextInt(allItems.size())));
         }
 
         for (Item item : allItems) {
-            Item randomItem = allItems.get(random.nextInt(allItems.size()));
-            itemReplacementMap.put(item, randomItem);
+            itemReplacementMap.put(item, allItems.get(random.nextInt(allItems.size())));
         }
-
-        System.out.println("Block-Drops und Item-Ersetzungen wurden randomisiert.");
-        System.out.println("Block-Mappings: " + blockDropMap.size() + ", Item-Mappings: " + itemReplacementMap.size());
-    }
-
-    private void registerEvents() {
-        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) -> {
-            if (!active) return true;
-            if (!(player instanceof ServerPlayerEntity)) return true;
-
-            Block block = state.getBlock();
-            Item replacement = blockDropMap.get(block);
-            if (replacement != null && !world.isClient()) {
-                world.breakBlock(pos, false);
-                world.setBlockState(pos, net.minecraft.block.Blocks.AIR.getDefaultState(), 3);
-                ItemStack drop = new ItemStack(replacement, 1);
-                world.spawnEntity(new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, drop));
-                return false;
-            }
-            return true;
-        });
-
-        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-            if (!active || server == null) return;
-            if (entity.getEntityWorld().isClient()) return;
-
-            server.execute(() -> {
-                net.minecraft.world.World world = entity.getEntityWorld();
-                if (world == null) return;
-
-                Box box = entity.getBoundingBox().expand(5.0);
-                List<ItemEntity> items = world.getEntitiesByClass(
-                        ItemEntity.class, box, e -> true);
-
-                for (ItemEntity itemEntity : items) {
-                    ItemStack stack = itemEntity.getStack();
-                    Item originalItem = stack.getItem();
-                    Item replacement = itemReplacementMap.get(originalItem);
-
-                    if (replacement != null) {
-                        int count = stack.getCount();
-                        ItemStack newStack = new ItemStack(replacement, count);
-                        ItemEntity newEntity = new ItemEntity(
-                                world,
-                                itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
-                                newStack);
-                        newEntity.setVelocity(itemEntity.getVelocity());
-                        itemEntity.discard();
-                        world.spawnEntity(newEntity);
-                    }
-                }
-            });
-        });
     }
 
     private void giveRandomItemToPlayers() {
@@ -189,10 +168,7 @@ public class RandomItemChallenge implements Challenge {
 
         List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
         List<Item> allItems = Registries.ITEM.stream().toList();
-        if (allItems.isEmpty()) {
-            System.err.println("Keine Items im Register gefunden.");
-            return;
-        }
+        if (allItems.isEmpty()) return;
 
         Item randomItem = allItems.get(random.nextInt(allItems.size()));
 
@@ -215,9 +191,6 @@ public class RandomItemChallenge implements Challenge {
     }
 
     public void addStackVote(UUID playerUuid, int vote) {
-        if (vote > 0) {
-            // store vote
-        }
     }
 
     public void calculateFinalStackSize() {
