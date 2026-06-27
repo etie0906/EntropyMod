@@ -6,6 +6,7 @@ import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -26,8 +27,9 @@ public class MainLobbyScreen extends Screen {
     private TextWidget timerDisplay;
     private FlatButton startBtn, pauseBtn, resumeBtn, stopBtn;
     private FlatButton colorBtn;
-    private final Set<String> activeChallenges = new HashSet<>();
-    private final Set<String> selectedChallengeIds = new HashSet<>();
+    private TextFieldWidget itemAmountField;
+    private static final Set<String> activeChallenges = new HashSet<>();
+    private static final Set<String> selectedChallengeIds = new HashSet<>();
 
     public MainLobbyScreen() {
         this(null);
@@ -135,15 +137,44 @@ public class MainLobbyScreen extends Screen {
         addChallengeToggle(bx, by + bh + 6, bw, bh, "movement_speed", "Movement Speed");
         addChallengeToggle(bx, by + 2 * (bh + 6), bw, bh, "random_item", "Random Item");
 
+        // TextField für Random-Item Stack-Größe direkt unter dem Random-Item-Toggle
+        int tfx = bx + 20;
+        int tfy = by + 3 * (bh + 6) + 4;
+        if (itemAmountField == null) {
+            itemAmountField = new TextFieldWidget(textRenderer, tfx, tfy, 50, 20, Text.literal("Amount"));
+            itemAmountField.setMaxLength(2);
+            itemAmountField.setText("1");
+            itemAmountField.setChangedListener(val -> {
+                if (val.isEmpty()) return;
+                try {
+                    int n = Integer.parseInt(val);
+                    if (n > 64) itemAmountField.setText("64");
+                } catch (NumberFormatException e) {
+                    itemAmountField.setText("1");
+                }
+            });
+        } else {
+            itemAmountField.setX(tfx);
+            itemAmountField.setY(tfy);
+        }
+        addDrawableChild(itemAmountField);
+        addDrawableChild(new TextWidget(tfx + 54, tfy, 120, 20,
+                Text.literal("Stack Size (1-64)").formatted(Formatting.DARK_GRAY),
+                textRenderer));
+
         int sx = bx + bw + 20;
         addDrawableChild(new FlatButton(sx, by, 120, bh, "▶ Start Selected", 0xFF2E7D32, 0xFF4CAF50,
                 () -> {
                     if (MinecraftClient.getInstance().player != null) {
                         for (String id : selectedChallengeIds) {
-                            MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge start " + id);
+                            if (id.equals("random_item")) {
+                                String amount = itemAmountField.getText().isEmpty() ? "1" : itemAmountField.getText();
+                                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge start random_item " + amount);
+                            } else {
+                                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge start " + id);
+                            }
                         }
                     }
-                    selectedChallengeIds.clear();
                     buildContent();
                 }));
 
@@ -152,6 +183,8 @@ public class MainLobbyScreen extends Screen {
                     if (MinecraftClient.getInstance().player != null) {
                         MinecraftClient.getInstance().player.networkHandler.sendChatCommand("challenge stop");
                     }
+                    selectedChallengeIds.clear();
+                    buildContent();
                 }));
 
         addDrawableChild(new FlatButton(sx, by + 2 * (bh + 6), 120, bh, "Test", 0xFF37474F, 0xFF546E7A,

@@ -22,7 +22,7 @@ public class ChallengesCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> startChallenge(ctx, 1))
-                                .then(CommandManager.argument("stackSize", IntegerArgumentType.integer(1))
+                                .then(CommandManager.argument("stackSize", IntegerArgumentType.integer(0, 64))
                                         .executes(ctx -> startChallenge(ctx,
                                                 IntegerArgumentType.getInteger(ctx, "stackSize"))))))
                 .then(CommandManager.literal("pause").executes(ChallengesCommand::pauseChallenge))
@@ -33,10 +33,10 @@ public class ChallengesCommand {
 
     private static int startChallenge(CommandContext<ServerCommandSource> context, int stackSize) {
         String id = StringArgumentType.getString(context, "name");
-        boolean started = ChallengeManager.getInstance().startChallenge(id);
+        boolean started = ChallengeManager.getInstance().startChallenge(id, stackSize);
         if (started) {
             context.getSource().sendFeedback(() ->
-                    Text.literal("Challenge " + id + " started!").formatted(Formatting.GREEN), true);
+                    Text.literal("Challenge " + id + " started! (stackSize=" + stackSize + ")").formatted(Formatting.GREEN), true);
         } else {
             context.getSource().sendError(
                     Text.literal("Challenge could not be started: a challenge is already running or the name is invalid").formatted(Formatting.RED));

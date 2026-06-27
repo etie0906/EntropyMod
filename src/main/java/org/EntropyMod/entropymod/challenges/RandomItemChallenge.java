@@ -17,6 +17,7 @@ public class RandomItemChallenge implements Challenge {
     private static final Map<Item, Item> itemReplacementMap = new HashMap<>();
 
     private int ticksUntilNextItem = 0;
+    private int ticksUntilRandomize = 0;
     private int stackSize = 1;
     private int finalStackSize = 1;
     private MinecraftServer server;
@@ -45,10 +46,11 @@ public class RandomItemChallenge implements Challenge {
         this.server = server;
         active = true;
         ticksUntilNextItem = 1200;
+        ticksUntilRandomize = 600;
         initializeDropMaps();
 
         for (ServerPlayerEntity player : players) {
-            player.sendMessage(Text.literal(String.format("§aRandom Item Challenge gestartet! §e(Stack-Größe: %d)", stackSize)), false);
+            player.sendMessage(Text.literal(String.format("§aRandom Item Challenge gestartet! §e(Stack-Größe: %d)", finalStackSize)), false);
             player.sendMessage(Text.literal("§eBlock- und Mob-Drops wurden randomisiert!"), false);
         }
     }
@@ -89,6 +91,18 @@ public class RandomItemChallenge implements Challenge {
     public void tick(MinecraftServer server) {
         if (!active || server == null) return;
 
+        if (finalStackSize == 0) {
+            ticksUntilRandomize--;
+            if (ticksUntilRandomize <= 0) {
+                finalStackSize = 1 + random.nextInt(64);
+                ticksUntilRandomize = 600;
+                String msg = "§eZufällige Stack-Größe: §6" + finalStackSize;
+                for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                    p.sendMessage(Text.literal(msg), false);
+                }
+            }
+        }
+
         ticksUntilNextItem--;
         if (ticksUntilNextItem <= 0) {
             giveRandomItemToPlayers();
@@ -109,6 +123,9 @@ public class RandomItemChallenge implements Challenge {
     public void setStackSize(int size) {
         this.stackSize = size;
         this.finalStackSize = size;
+        if (size == 0) {
+            ticksUntilRandomize = 600;
+        }
     }
 
     private void initializeDropMaps() {
@@ -133,8 +150,14 @@ public class RandomItemChallenge implements Challenge {
 
         Item randomItem = allItems.get(random.nextInt(allItems.size()));
 
+        if (finalStackSize == 0) {
+            finalStackSize = 1 + random.nextInt(64);
+        }
+
+        int effectiveSize = finalStackSize;
+
         for (ServerPlayerEntity player : players) {
-            ItemStack stack = new ItemStack(randomItem, finalStackSize);
+            ItemStack stack = new ItemStack(randomItem, effectiveSize);
             boolean added = player.getInventory().insertStack(stack);
             if (!added) {
                 player.dropItem(stack, false);
@@ -143,7 +166,7 @@ public class RandomItemChallenge implements Challenge {
             String itemName = randomItem.getName().getString();
             player.sendMessage(Text.literal("§bDu hast ein zufälliges Item erhalten: ")
                     .append(Text.literal(itemName))
-                    .append(Text.literal(String.format(" §7(x%d)", finalStackSize))), false);
+                    .append(Text.literal(String.format(" §7(x%d)", effectiveSize))), false);
         }
     }
 

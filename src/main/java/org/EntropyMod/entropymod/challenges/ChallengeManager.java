@@ -43,6 +43,10 @@ public class ChallengeManager {
     }
 
     public boolean startChallenge(String id) {
+        return startChallenge(id, 1);
+    }
+
+    public boolean startChallenge(String id, int stackSize) {
         Challenge challenge = availableChallenges.get(id);
         if (challenge == null) return false;
 
@@ -53,6 +57,10 @@ public class ChallengeManager {
                 }
             }
             activeChallenges.clear();
+
+            if (challenge instanceof RandomItemChallenge) {
+                ((RandomItemChallenge) challenge).setStackSize(stackSize);
+            }
 
             challenge.start(server, getActivePlayers());
             activeChallenges.add(challenge);
