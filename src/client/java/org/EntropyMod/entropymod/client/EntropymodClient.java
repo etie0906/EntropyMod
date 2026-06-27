@@ -36,6 +36,7 @@ public class EntropymodClient implements ClientModInitializer {
         });
 
         registerPacketHandlers();
+        TimerOverlay.init();
     }
 
     private void registerPacketHandlers() {

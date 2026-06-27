@@ -129,9 +129,14 @@ public class DigitalTimerWidget extends ClickableWidget {
                 seconds = Integer.parseInt(timeParts[2]);
             } else {
                 String[] parts = timeStr.split(":");
-                hours   = Integer.parseInt(parts[0]);
-                minutes = Integer.parseInt(parts[1]);
-                seconds = Integer.parseInt(parts[2]);
+                if (parts.length == 3) {
+                    hours   = Integer.parseInt(parts[0]);
+                    minutes = Integer.parseInt(parts[1]);
+                    seconds = Integer.parseInt(parts[2]);
+                } else if (parts.length == 2) {
+                    minutes = Integer.parseInt(parts[0]);
+                    seconds = Integer.parseInt(parts[1]);
+                }
             }
         } catch (Exception e) {
         }

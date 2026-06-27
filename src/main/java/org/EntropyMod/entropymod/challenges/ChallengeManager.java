@@ -2,6 +2,7 @@ package org.EntropyMod.entropymod.challenges;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import org.EntropyMod.entropymod.timer.TimerManager;
 
 import java.util.*;
 
@@ -10,9 +11,6 @@ public class ChallengeManager {
 
     private Map<String, Challenge> availableChallenges = new HashMap<>();
     private List<Challenge> activeChallenges = new ArrayList<>();
-    private Set<UUID> readyPlayers = new HashSet<>();
-    private UUID adminUuid = null;
-    private boolean forceStarted = false;
     private MinecraftServer server;
 
     private ChallengeManager() {
@@ -26,7 +24,8 @@ public class ChallengeManager {
 
     private void registerDefaultChallenges() {
         registerChallenge(new DummyChallenge());
-        // Add more challenges here later
+        registerChallenge(new MovementSpeedChallenge());
+        registerChallenge(new RandomItemChallenge());
     }
 
     public void registerChallenge(Challenge challenge) {
@@ -48,8 +47,16 @@ public class ChallengeManager {
         if (challenge == null) return false;
 
         if (!challenge.isActive()) {
+            for (Challenge c : activeChallenges) {
+                if (c.isActive()) {
+                    c.stop(server);
+                }
+            }
+            activeChallenges.clear();
+
             challenge.start(server, getActivePlayers());
             activeChallenges.add(challenge);
+            TimerManager.getInstance().start();
             return true;
         }
         return false;
@@ -60,6 +67,7 @@ public class ChallengeManager {
         if (challenge != null && challenge.isActive()) {
             challenge.stop(server);
             activeChallenges.remove(challenge);
+            TimerManager.getInstance().stop();
             return true;
         }
         return false;
@@ -72,6 +80,7 @@ public class ChallengeManager {
             }
         }
         activeChallenges.clear();
+        TimerManager.getInstance().stop();
     }
 
     public void pauseAll() {
@@ -80,6 +89,7 @@ public class ChallengeManager {
                 challenge.pause(server);
             }
         }
+        TimerManager.getInstance().pause();
     }
 
     public void resumeAll() {
@@ -88,6 +98,7 @@ public class ChallengeManager {
                 challenge.resume(server);
             }
         }
+        TimerManager.getInstance().resume();
     }
 
     public List<Challenge> getAvailableChallenges() {
@@ -98,67 +109,11 @@ public class ChallengeManager {
         return new ArrayList<>(activeChallenges);
     }
 
-    // Ready system
-    public void setReady(UUID playerUuid, boolean ready) {
-        if (ready) readyPlayers.add(playerUuid);
-        else readyPlayers.remove(playerUuid);
-
-        checkAllReady();
-    }
-
-    public boolean isReady(UUID playerUuid) {
-        return readyPlayers.contains(playerUuid);
-    }
-
-    public void clearReady() {
-        readyPlayers.clear();
-    }
-
-    private void checkAllReady() {
-        if (server == null) return;
-
-        int playerCount = server.getPlayerManager().getPlayerList().size();
-        if (readyPlayers.size() >= playerCount && playerCount > 0 && !forceStarted) {
-            // Auto-start when all ready (optional, or wait for admin)
-        }
-    }
-
-    public void forceStart(UUID adminUuid) {
-        this.adminUuid = adminUuid;
-        this.forceStarted = true;
-        // Start all selected challenges
-    }
-
-    public boolean isForceStarted() { return forceStarted; }
-
-    public void setAdmin(UUID uuid) {
-        this.adminUuid = uuid;
-    }
-
-    public UUID getAdmin() { return adminUuid; }
-
-    public boolean isAdmin(UUID uuid) {
-        if (adminUuid == null) return false;
-        return adminUuid.equals(uuid);
+    public void onPlayerJoin(ServerPlayerEntity player) {
     }
 
     private List<ServerPlayerEntity> getActivePlayers() {
         if (server == null) return new ArrayList<>();
         return server.getPlayerManager().getPlayerList();
-    }
-
-    public void onPlayerJoin(ServerPlayerEntity player) {
-        // If no admin, first player becomes admin
-        if (adminUuid == null) {
-            adminUuid = player.getUuid();
-        }
-    }
-
-    public void save() {
-        // Persist state
-    }
-
-    public void load(MinecraftServer server) {
-        this.server = server;
     }
 }

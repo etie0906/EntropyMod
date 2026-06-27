@@ -24,13 +24,13 @@ public class TimerOverlay implements HudRenderCallback {
         if (client.currentScreen != null) return;
 
         int x = client.getWindow().getScaledWidth() / 2;
-        int y = client.getWindow().getScaledHeight() - 55;
+        int y = client.getWindow().getScaledHeight() - 69;
 
         Text timeText = formatTime(currentTime, currentColor);
 
         // Draw background
         int textWidth = client.textRenderer.getWidth(timeText);
-        drawContext.fill(x - textWidth / 2 - 5, y - 2, x + textWidth / 2 + 5, y + 12, 0x88000000);
+        drawContext.fill(x - textWidth / 2 - 5, y - 5, x + textWidth / 2 + 5, y + 7, 0x88000000);
 
         // Draw time
         drawContext.drawCenteredTextWithShadow(client.textRenderer, timeText, x, y, 0xFFFFFF);

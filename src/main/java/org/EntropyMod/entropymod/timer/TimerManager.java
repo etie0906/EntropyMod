@@ -6,6 +6,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.world.rule.GameRules;
 import org.EntropyMod.entropymod.Entropymod;
+import org.EntropyMod.entropymod.freezer.WorldFreezer;
 import org.EntropyMod.entropymod.network.ChallengePackets;
 
 import java.util.HashMap;
@@ -19,6 +20,7 @@ public class TimerManager {
     private boolean upwards = true;
     private int time = 0;
     private String color = "WHITE";
+    private int gameTicks = 0;
     private Map<UUID, Boolean> frozenPlayers = new HashMap<>();
 
     public static TimerManager getInstance() {
@@ -34,6 +36,10 @@ public class TimerManager {
 
     public void tick() {
         if (!running || server == null) return;
+
+        gameTicks++;
+        if (gameTicks < 20) return;
+        gameTicks = 0;
 
         if (upwards) {
             time++;
@@ -57,32 +63,57 @@ public class TimerManager {
     }
 
     private String formatTime(int seconds) {
-        int mins = seconds / 60;
+        int hrs = seconds / 3600;
+        int mins = (seconds % 3600) / 60;
         int secs = seconds % 60;
+        if (hrs > 0) {
+            return String.format("%02d:%02d:%02d", hrs, mins, secs);
+        }
         return String.format("%02d:%02d", mins, secs);
     }
 
     private Text formatColoredText(String text, String color) {
-        try {
-            if (color.startsWith("#")) {
+        if (color.startsWith("#")) {
+            try {
                 int hex = Integer.parseInt(color.substring(1), 16);
                 return Text.literal(text).styled(s -> s.withColor(hex));
-            } else {
+            } catch (Exception e) {
                 return Text.literal(text).formatted(Formatting.WHITE);
             }
-        } catch (Exception e) {
-            Formatting formatting = Formatting.byName(color.toUpperCase());
-            if (formatting == null) formatting = Formatting.WHITE;
-            return Text.literal(text).formatted(formatting);
         }
+        Formatting formatting = Formatting.byName(color.toUpperCase());
+        if (formatting == null) formatting = Formatting.WHITE;
+        return Text.literal(text).formatted(formatting);
     }
 
-    public void start() { running = true; }
-    public void pause() { running = false; }
-    public void stop() { running = false; time = 0; }
+    public void start() {
+        running = true;
+        time = 0;
+        gameTicks = 0;
+        WorldFreezer.getInstance().unfreeze();
+    }
+
+    public void pause() {
+        running = false;
+        WorldFreezer.getInstance().freeze();
+    }
+
+    public void resume() {
+        running = true;
+        WorldFreezer.getInstance().unfreeze();
+    }
+
+    public void stop() {
+        running = false;
+        time = 0;
+        WorldFreezer.getInstance().unfreeze();
+    }
     public void setUpwards(boolean up) { this.upwards = up; }
     public void setColor(String color) { this.color = color; }
     public void setTime(int seconds) { this.time = seconds; }
+    public boolean isRunning() { return running; }
+    public boolean isUpwards() { return upwards; }
+    public String getColor() { return color; }
 
     public void onPlayerJoin(ServerPlayerEntity player) {
         frozenPlayers.put(player.getUuid(), false);

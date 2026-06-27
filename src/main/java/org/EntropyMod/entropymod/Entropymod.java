@@ -2,10 +2,12 @@ package org.EntropyMod.entropymod;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
+import org.EntropyMod.entropymod.challenges.ChallengeManager;
 import org.EntropyMod.entropymod.commands.ChallengesCommand;
 import org.EntropyMod.entropymod.commands.TimerCommand;
 import org.EntropyMod.entropymod.freezer.WorldFreezer;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class Entropymod implements ModInitializer {
     public static final String MOD_ID = "entropymod";
+    public static final String MOD_VERSION = "a0.1.114t";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
@@ -33,6 +36,7 @@ public class Entropymod implements ModInitializer {
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             TimerManager.getInstance().tick();
             WorldFreezer.getInstance().tick();
+            ChallengeManager.getInstance().tick(server);
         });
 
         // Player Events
@@ -45,6 +49,11 @@ public class Entropymod implements ModInitializer {
             TimerManager.getInstance().onPlayerLeave(handler.player);
         });
 
+        // Respawn handling (for frozen players)
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            WorldFreezer.getInstance().onPlayerRespawn(newPlayer);
+        });
+
         // Commands
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ChallengesCommand.register(dispatcher);
@@ -55,6 +64,7 @@ public class Entropymod implements ModInitializer {
     private void onServerStarted(MinecraftServer server) {
         TimerManager.getInstance().init(server);
         WorldFreezer.getInstance().init(server);
+        WorldFreezer.getInstance().freeze();
 
         LOGGER.info("Server started with {} players", server.getPlayerManager().getPlayerList().size());
     }
